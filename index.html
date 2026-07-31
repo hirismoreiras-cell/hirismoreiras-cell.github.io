@@ -299,6 +299,8 @@ footer .selof{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-t
       <label class="fld" for="iaKey">Chave de API</label>
       <input type="password" id="iaKey" autocomplete="off" placeholder="cole aqui a sua chave">
     </div>
+    <label class="fld" id="iaListaLbl" for="iaLista" style="display:none;margin-top:10px">Modelos liberados para esta chave</label>
+    <select id="iaLista" style="display:none"></select>
     <p class="hint" id="iaNota" style="margin-top:8px"></p>
     <details style="margin-top:10px">
       <summary>Obter a chave gratuita do Gemini (1 minuto, no próprio celular)</summary>
@@ -308,13 +310,15 @@ footer .selof{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-t
         3. Escolha um projeto — se não houver nenhum, o próprio site cria um.<br>
         4. Toque no ícone de <b>copiar</b> ao lado da chave gerada.<br>
         5. Volte aqui, cole no campo acima e toque em <b>Salvar chave neste aparelho</b> — o teste roda sozinho.</p>
-        <p class="hint" style="margin-top:8px">A camada gratuita não pede cartão de crédito. Se um dia aparecer aviso de limite, a ferramenta aguarda e repete automaticamente.</p>
+        <p class="hint" style="margin-top:8px">A camada gratuita não pede cartão de crédito. Se aparecer aviso de limite, a ferramenta aguarda e repete automaticamente.</p>
+        <p class="hint" style="margin-top:8px">O catálogo do Google muda com frequência e nem todo modelo fica liberado na camada gratuita. Por isso o campo «Modelo» não precisa ser adivinhado: toque em <b>Detectar modelos</b> e o site pergunta ao Google quais a sua chave aceita, já selecionando o melhor. Se um modelo sair do ar no meio de uma varredura, a troca é feita sozinha.</p>
       </div>
     </details>
     <label class="opt" style="margin-top:12px"><input type="checkbox" id="iaAuto" checked><span>Analisar automaticamente ao fim de cada varredura<small>Vale quando houver chave salva; caso contrário, use o botão «Analisar com IA» em §2.</small></span></label>
     <div class="btnrow">
       <button class="btn sec" id="btnIAsave">Salvar chave neste aparelho</button>
       <button class="btn mini" id="btnIAtest">Testar chave</button>
+      <button class="btn mini" id="btnIAmodelos">Detectar modelos</button>
       <button class="btn mini" id="btnIAclear">Apagar chave</button>
     </div>
     <p class="hint" id="iaStatus" style="margin-top:8px"></p>
@@ -1345,15 +1349,31 @@ async function chamarIA(cfg, userMsg) {
       return parts.map((p) => p.text || '').join('');
     };
   }
-  const r = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
+  let r;
+  try {
+    r = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
+  } catch (e) {
+    throw new Error('não foi possível alcançar o provedor (rede ou bloqueio do navegador). '
+      + 'Confirme que a página está aberta pelo endereço https publicado.');
+  }
   const bruto = await r.text();
   let d;
   try { d = JSON.parse(bruto); }
   catch (e) { throw new Error('resposta ilegível do provedor'); }
   if (!r.ok) {
     const msg = (d.error && (d.error.message || d.error.type)) || ('HTTP ' + r.status);
-    if (r.status === 401 || r.status === 403) throw new Error('chave recusada — confira em ' + PROVIDERS[cfg.prov].console);
-    if (r.status === 429) throw new Error('limite de uso atingido — aguarde e repita');
+    const st = (d.error && d.error.status) || '';
+    if (r.status === 404 || /not found|is not supported/i.test(msg)) {
+      throw new Error('MODELO_INDISPONIVEL: o modelo «' + cfg.modelo + '» não está disponível para esta chave');
+    }
+    if (r.status === 401 || r.status === 403 || /API_KEY_INVALID/i.test(msg)) {
+      if (/SERVICE_DISABLED|has not been used|is disabled/i.test(msg)) {
+        throw new Error('a API Generative Language não está habilitada no projeto desta chave — gere a chave pelo AI Studio (' + PROVIDERS[cfg.prov].console + ')');
+      }
+      throw new Error('chave recusada — confira em ' + PROVIDERS[cfg.prov].console);
+    }
+    if (r.status === 429 || st === 'RESOURCE_EXHAUSTED') throw new Error('limite de uso atingido — aguarde e repita');
+    if (r.status === 400) throw new Error('requisição recusada pelo provedor: ' + msg);
     throw new Error(msg);
   }
   return extrair(d);
@@ -1377,6 +1397,91 @@ function montarLote(itens) {
     L.push('');
   });
   return L.join('\n');
+}
+
+/* ---------- descoberta de modelos (Gemini) ---------- */
+function pontuaModelo(nome) {
+  const s = nome.toLowerCase();
+  if (/embedding|aqa|image|tts|live|audio|imagen|veo|learnlm/.test(s)) return -1;
+  let p = 0;
+  if (s.indexOf('flash') >= 0) p += 100;
+  if (s.indexOf('pro') >= 0) p += 10;
+  if (s.indexOf('lite') >= 0) p -= 5;
+  if (s.indexOf('preview') >= 0 || s.indexOf('exp') >= 0) p -= 25;
+  const m = s.match(/(\d+)(?:\.(\d+))?/);
+  if (m) p += (parseInt(m[1], 10) || 0) * 10 + (parseInt(m[2], 10) || 0);
+  return p;
+}
+async function listarModelosGemini(chave) {
+  const achados = [];
+  let token = '';
+  for (let i = 0; i < 3; i++) {
+    const url = 'https://generativelanguage.googleapis.com/v1beta/models?pageSize=200'
+      + (token ? ('&pageToken=' + encodeURIComponent(token)) : '');
+    let r;
+    try {
+      r = await fetch(url, { headers: { 'x-goog-api-key': chave } });
+    } catch (e) {
+      throw new Error('não foi possível alcançar o Google (rede ou bloqueio do navegador)');
+    }
+    const bruto = await r.text();
+    let d;
+    try { d = JSON.parse(bruto); } catch (e) { throw new Error('resposta ilegível do Google'); }
+    if (!r.ok) {
+      const msg = (d.error && d.error.message) || ('HTTP ' + r.status);
+      if (/SERVICE_DISABLED|has not been used|is disabled/i.test(msg)) {
+        throw new Error('a API Generative Language não está habilitada no projeto desta chave — gere a chave pelo AI Studio');
+      }
+      if (r.status === 401 || r.status === 403 || /API_KEY_INVALID/i.test(msg)) {
+        throw new Error('chave recusada pelo Google');
+      }
+      throw new Error(msg);
+    }
+    (d.models || []).forEach((m) => {
+      const metodos = m.supportedGenerationMethods || m.supportedActions || [];
+      if (metodos.indexOf('generateContent') < 0) return;
+      const nome = String(m.name || '').replace(/^models\//, '');
+      if (!nome) return;
+      achados.push(nome);
+    });
+    token = d.nextPageToken || '';
+    if (!token) break;
+  }
+  const unicos = Array.from(new Set(achados)).filter((n) => pontuaModelo(n) >= 0);
+  unicos.sort((x, y) => pontuaModelo(y) - pontuaModelo(x) || x.localeCompare(y));
+  return unicos;
+}
+async function detectarModelos(silencioso, evitar) {
+  const cfg = iaCfgAtual();
+  const st = $('#iaStatus');
+  if (cfg.prov !== 'gemini') {
+    if (!silencioso) st.textContent = 'A detecção automática vale para o Gemini. Para a Anthropic, consulte os modelos no console.';
+    return null;
+  }
+  if (!cfg.chave) {
+    if (!silencioso) st.textContent = 'Informe a chave antes de detectar os modelos.';
+    return null;
+  }
+  if (!silencioso) st.textContent = 'Consultando o Google…';
+  let lista = await listarModelosGemini(cfg.chave);
+  if (evitar) lista = lista.filter((n) => n !== evitar);
+  const sel = $('#iaLista');
+  if (!lista.length) {
+    if (!silencioso) st.textContent = 'A chave não retornou modelos de texto disponíveis.';
+    sel.style.display = 'none';
+    return null;
+  }
+  sel.innerHTML = lista.map((n) => '<option value="' + esc(n) + '">' + esc(n) + '</option>').join('');
+  sel.style.display = 'block';
+  $('#iaListaLbl').style.display = 'block';
+  const escolhido = lista[0];
+  $('#iaModelo').value = escolhido;
+  sel.value = escolhido;
+  saveKeyCfg(iaCfgAtual());
+  if (!silencioso) {
+    st.textContent = lista.length + ' modelo(s) disponível(is) para esta chave. Selecionado: ' + escolhido + '.';
+  }
+  return escolhido;
 }
 
 /* ---------- execução ---------- */
@@ -1410,7 +1515,15 @@ async function analisarIA() {
       try {
         resposta = await chamarIA(cfg, montarLote(lote));
       } catch (e1) {
-        if (/limite de uso/.test(e1.message)) {
+        if (/^MODELO_INDISPONIVEL/.test(e1.message) && cfg.prov === 'gemini') {
+          linha.className = 'plog';
+          linha.textContent = 'IA · modelo indisponível — detectando o modelo correto…';
+          const novo = await detectarModelos(true, cfg.modelo);
+          if (!novo) throw new Error(e1.message.replace('MODELO_INDISPONIVEL: ', ''));
+          cfg.modelo = novo;
+          logLine('IA · modelo ajustado automaticamente para «' + esc(novo) + '».', 'ok');
+          resposta = await chamarIA(cfg, montarLote(lote));
+        } else if (/limite de uso/.test(e1.message)) {
           linha.className = 'plog';
           linha.textContent = 'IA · lote ' + nLote + '/' + total + ' — limite atingido, aguardando 20s…';
           await sleep(20000);
@@ -1453,12 +1566,29 @@ async function testarChave() {
   const st = $('#iaStatus');
   if (!cfg.chave) { st.textContent = 'Informe a chave primeiro.'; return; }
   st.textContent = 'Testando…';
+  const sonda = 'Responda exatamente: [{"id":1,"nota":0,"eixo":"Sem relação","impacto":"teste","acao":"Nenhuma"}]';
   try {
-    const t = await chamarIA(cfg, 'Responda exatamente: [{"id":1,"nota":0,"eixo":"Sem relação","impacto":"teste","acao":"Nenhuma"}]');
+    const t = await chamarIA(cfg, sonda);
     parseJsonArray(t);
-    st.textContent = 'Chave válida e modelo respondendo.';
+    st.textContent = 'Chave válida — modelo «' + cfg.modelo + '» respondendo.';
+    return;
   } catch (e) {
-    st.textContent = 'Falhou: ' + e.message;
+    if (!/^MODELO_INDISPONIVEL/.test(e.message) || cfg.prov !== 'gemini') {
+      st.textContent = 'Falhou: ' + e.message.replace('MODELO_INDISPONIVEL: ', '');
+      return;
+    }
+    st.textContent = 'Modelo indisponível — procurando o correto para esta chave…';
+  }
+  try {
+    const novo = await detectarModelos(true, cfg.modelo);
+    if (!novo) { st.textContent = 'A chave é válida, mas nenhum modelo de texto está liberado nela.'; return; }
+    const cfg2 = iaCfgAtual();
+    const t2 = await chamarIA(cfg2, sonda);
+    parseJsonArray(t2);
+    saveKeyCfg(cfg2);
+    st.textContent = 'Chave válida — modelo ajustado automaticamente para «' + novo + '».';
+  } catch (e2) {
+    st.textContent = 'Falhou: ' + e2.message.replace('MODELO_INDISPONIVEL: ', '');
   }
 }
 
@@ -1499,6 +1629,15 @@ function initIA() {
     }
   });
   $('#btnIAtest').addEventListener('click', testarChave);
+  $('#btnIAmodelos').addEventListener('click', async () => {
+    try { await detectarModelos(false); }
+    catch (e) { $('#iaStatus').textContent = 'Falhou: ' + e.message; }
+  });
+  $('#iaLista').addEventListener('change', () => {
+    $('#iaModelo').value = $('#iaLista').value;
+    saveKeyCfg(iaCfgAtual());
+    $('#iaStatus').textContent = 'Modelo definido: ' + $('#iaLista').value;
+  });
   $('#btnIAclear').addEventListener('click', () => {
     clearKeyCfg();
     $('#iaKey').value = '';
