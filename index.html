@@ -101,6 +101,14 @@ input[type=date],select,input[type=text]{width:100%;padding:9px 10px;border:1px 
 .links{margin-top:6px;font-family:var(--mono);font-size:11px;display:flex;gap:12px;flex-wrap:wrap}
 .vazio{font-size:13px;color:var(--grafite);font-style:italic;padding:6px 0}
 
+.motivos{display:flex;gap:5px;flex-wrap:wrap;margin:2px 0 7px}
+.motivo{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--selo);color:var(--selo);border-radius:2px;padding:1px 6px;background:var(--selo-claro)}
+details.ocultos{margin-top:16px;border-style:dashed;background:#FBFBF7}
+details.ocultos summary{color:var(--grafite)}
+.oitem{font-size:12.5px;color:var(--grafite);padding:5px 0;border-bottom:1px dashed var(--linha);word-break:break-word}
+.oitem a{color:var(--grafite)}
+.oitem i{opacity:.8}
+
 /* ---------- MG / scanner ---------- */
 .mgLinks{display:grid;gap:6px;margin:10px 0;font-family:var(--mono);font-size:12px}
 textarea{width:100%;min-height:96px;border:1px solid var(--linha);border-radius:3px;background:#FDFDFB;padding:9px 10px;font-family:var(--mono);font-size:12.5px;color:var(--tinta)}
@@ -165,7 +173,8 @@ footer .selof{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-t
     <div class="opts">
       <label class="opt"><input type="checkbox" id="srcDou" checked><span><b>União — DOU</b> (busca oficial da Imprensa Nacional)<small>Consulta os termos dos grupos A e B na busca do in.gov.br.</small></span></label>
       <label class="opt"><input type="checkbox" id="srcQd" checked><span><b>Belo Horizonte — DOM</b> (via base aberta Querido Diário / OKBR)<small>Busca no texto integral do Diário Oficial do Município. A base pode ter defasagem de alguns dias.</small></span></label>
-      <label class="opt"><input type="checkbox" id="useC"><span>Usar também os termos do grupo C como consultas<small>Amplia a cobertura normativa (portarias, resoluções, incentivos), mas gera mais resultados para triagem.</small></span></label>
+      <label class="opt"><input type="checkbox" id="useT" checked><span>Incluir consultas temáticas de legislação<small>Frases exatas de alta precisão (filantropia, MAC, incentivos, FMS-BH) — editáveis em §4.</small></span></label>
+      <label class="opt"><input type="checkbox" id="modoAP" checked><span>Modo alta precisão<small>Exibe só menção direta e atos com gatilho de impacto; o restante fica na dobra «Filtrados», revisável e presente no CSV.</small></span></label>
       <label class="opt"><input type="checkbox" id="priorMS" checked><span>Sinalizar atos do Ministério da Saúde no DOU</span></label>
     </div>
     <div class="selrow">
@@ -236,8 +245,16 @@ footer .selof{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-t
         <textarea id="taB" rows="4"></textarea>
       </div>
       <div class="grp">
-        <div class="gt"><b>Grupo C — vocabulário normativo de saúde</b><span>classifica os achados; vira consulta só se marcado em §1</span></div>
-        <textarea id="taC" rows="7"></textarea>
+        <div class="gt"><b>Grupo T — consultas temáticas (legislação de impacto)</b><span>frases exatas pesquisadas no DOU e no DOM</span></div>
+        <textarea id="taT" rows="5"></textarea>
+      </div>
+      <div class="grp">
+        <div class="gt"><b>Exclusões</b><span>achados cujo início contiver estes termos vão direto para «Filtrados»</span></div>
+        <textarea id="taX" rows="3"></textarea>
+      </div>
+      <div class="grp">
+        <div class="gt"><b>Regras de impacto embutidas</b><span>aplicadas ao texto de cada achado</span></div>
+        <div id="rulesDoc" class="hint"></div>
       </div>
       <div class="btnrow">
         <button class="btn sec" id="btnSaveTerms">Salvar termos</button>
@@ -249,7 +266,7 @@ footer .selof{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-t
 </section>
 
 <footer>
-  <p><b>Método.</b> União: consulta à busca oficial da Imprensa Nacional (in.gov.br), termo a termo, no período indicado; quando o navegador exige, a leitura passa por um proxy público de CORS (AllOrigins, CodeTabs ou corsproxy), sem armazenamento próprio. Belo Horizonte: API pública do projeto Querido Diário (Open Knowledge Brasil), que indexa o texto integral do DOM. Minas Gerais: verificação assistida com análise local do PDF/texto da edição.</p>
+  <p><b>Método.</b> União: consulta à busca oficial da Imprensa Nacional (in.gov.br), termo a termo, no período indicado; quando o navegador exige, a leitura passa por um proxy público de CORS (AllOrigins, CodeTabs ou corsproxy), sem armazenamento próprio. Belo Horizonte: API pública do projeto Querido Diário (Open Knowledge Brasil), que indexa o texto integral do DOM. Minas Gerais: verificação assistida com análise local do PDF/texto da edição. A triagem aplica, além dos termos, regras de impacto do perfil institucional (filantropia/CEBAS, contratualização e financiamento SUS, programas ativos, repasses BH/MG, CNES); o que não aciona regra vai para a dobra «Filtrados» e para o CSV — nada é descartado silenciosamente.</p>
   <p><b>Limitações.</b> Ferramenta de triagem — não substitui a leitura da publicação oficial nem constitui parecer. Bases de terceiros podem ter defasagem ou indisponibilidade; a busca do DOU retorna até 50 itens por termo/período (refine as datas se necessário).</p>
   <p><b>Privacidade.</b> Página estática, sem inteligência artificial, sem servidor próprio, sem coleta de dados. As únicas conexões são às fontes públicas citadas e, para PDFs, à biblioteca pdf.js (cdnjs) carregada sob demanda.</p>
   <div class="selof">— Sentinela · edição estática · verifique sempre o original —</div>
@@ -259,11 +276,12 @@ footer .selof{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-t
 <script>
 'use strict';
 /* ============================================================
-   SENTINELA — clipping de diários oficiais (União / MG / BH)
-   Página estática. Sem IA, sem backend. Fontes públicas:
-   - DOU: busca oficial da Imprensa Nacional (in.gov.br)
-   - DOM-BH: API pública do Querido Diário (OKBR), IBGE 3106200
-   - MG: verificação assistida + análise local de PDF (pdf.js)
+   SENTINELA v2 — clipping de diários oficiais (União / MG / BH)
+   Página estática, sem IA e sem backend.
+   Classificação em três níveis:
+     direta  — menção nominal à Fundação (grupo A)
+     impacto — ato que aciona regra de impacto do perfil do hospital
+     oculto  — sem gatilho: vai para a dobra «Filtrados» e para o CSV
    ============================================================ */
 
 /* ---------- termos padrão ---------- */
@@ -278,28 +296,56 @@ const DEF = {
     'Maternidade Santa Fé',
     'Hospital Regional de Sete Lagoas'
   ],
-  c: [
-    'saúde', 'SUS', 'hospitalar', 'atenção especializada',
-    'credenciamento', 'habilitação', 'incentivo financeiro',
-    'custeio', 'repasse', 'emenda parlamentar', 'convênio',
-    'Transferegov', 'fundo nacional de saúde', 'fundo estadual de saúde',
-    'fundo municipal de saúde', 'CNES', 'média e alta complexidade',
-    'teto financeiro', 'contrato de gestão', 'filantrópic', 'CEBAS',
-    'deliberação CIB', 'resolução SES'
+  t: [
+    'hospitais filantrópicos',
+    'entidades beneficentes',
+    'média e alta complexidade',
+    'incentivo financeiro de custeio',
+    'fundo municipal de saúde de belo horizonte'
+  ],
+  x: [
+    'aposentadoria',
+    'pensão por morte',
+    'exoneração',
+    'conselho regional'
   ]
 };
-const RESOURCE_MARKERS = [
-  'repasse', 'emenda', 'incentivo', 'custeio', 'investimento',
-  'convênio', 'convenio', 'transferegov', 'fundo nacional de saúde',
-  'fundo nacional de saude', 'fundo estadual de saúde', 'fundo estadual de saude',
-  'fundo municipal de saúde', 'fundo municipal de saude',
-  'habilitação', 'habilitacao', 'crédito', 'credito',
-  'transferência', 'transferencia', 'termo de fomento', 'contrato de gestão',
-  'contrato de gestao', 'recurso financeiro', 'recursos financeiros'
+
+/* ---------- regras de impacto (perfil FHSFA/CHSF) ---------- */
+const IMPACT_RULES = [
+  { motivo: 'Programa/rede ativa',
+    any: ['agora tem especialistas', 'valora minas', 'incentivo 100% sus',
+          'rede de urgência e emergência', 'doação de órgãos', 'hospital de ensino'] },
+  { motivo: 'Filantropia/CEBAS',
+    any: ['cebas', 'entidade beneficente', 'entidades beneficentes', 'filantróp',
+          'sem fins lucrativos', 'lei complementar 187'] },
+  { motivo: 'Contratualização SUS',
+    any: ['contratualização', 'participação complementar',
+          'prestadores de serviços ao sus', 'complementar ao sus'] },
+  { motivo: 'Financiamento hospitalar',
+    any: ['teto mac', 'média e alta complexidade', 'faec', 'fundo a fundo',
+          'incentivo financeiro de custeio', 'incentivo financeiro de investimento',
+          'habilitação de leitos', 'credenciamento hospitalar', 'tabela sus',
+          'sigtap', 'portaria de habilitação'] },
+  { motivo: 'Repasse/emenda federal', src: ['DOU'],
+    any: ['transferegov', 'emenda parlamentar', 'emendas parlamentares',
+          'fundo municipal de saúde de belo horizonte',
+          'fundo estadual de saúde de minas gerais'] },
+  { motivo: 'Gestão municipal (SMSA/FMS-BH)', src: ['DOM-BH', 'MG'],
+    any: ['secretaria municipal de saúde', 'fundo municipal de saúde',
+          'chamamento público', 'credenciamento', 'termo de colaboração',
+          'termo de fomento', 'contrato de gestão'] },
+  { motivo: 'Gestão estadual (SES/MG · CIB)',
+    any: ['ses/mg', 'ses-mg', 'secretaria de estado de saúde',
+          'deliberação cib', 'resolução ses'] },
+  { motivo: 'CNES/cadastro',
+    any: ['cnes', 'cadastro nacional de estabelecimentos de saúde'] },
+  { motivo: 'Obrigações transversais',
+    any: ['reforma tributária', 'riscos psicossociais', 'nr-1', 'desoneração da folha'] }
 ];
 
 /* ---------- armazenamento (com tolerância a ambientes restritos) ---------- */
-const KEY = 'sentinela_fhsfa_v1';
+const KEY = 'sentinela_fhsfa_v2';
 const memStore = {};
 let storageOk = true;
 function saveCfg(cfg) {
@@ -370,50 +416,83 @@ function accentRegex(term) {
   catch (e) { return new RegExp(out, 'gi'); }
 }
 
-/* ---------- estado ---------- */
-let TERMS = [];      // [{t, grp, rx}]
+/* ---------- compilação de termos e regras ---------- */
+let T_A = [], T_B = [], T_T = [], T_X = [], RULES = [], HILITE = [];
 let state = { items: [], running: false, ranPeriod: null };
 
 function readTermsFromUI() {
   const grab = (id) => $(id).value.split('\n').map((x) => x.trim()).filter(Boolean);
-  return { a: grab('#taA'), b: grab('#taB'), c: grab('#taC') };
+  return { a: grab('#taA'), b: grab('#taB'), t: grab('#taT'), x: grab('#taX') };
 }
-function compileTerms(cfg) {
-  TERMS = [];
-  ['a', 'b', 'c'].forEach((g) => {
-    (cfg[g] || []).forEach((t) => {
-      if (t.length < 3) return;
-      TERMS.push({ t, grp: g, rx: accentRegex(t) });
-    });
-  });
+function compileAll(cfg) {
+  const mk = (t) => ({ t, rx: accentRegex(t) });
+  T_A = (cfg.a || []).filter((t) => t.length >= 4).map(mk);
+  T_B = (cfg.b || []).filter((t) => t.length >= 4).map(mk);
+  T_T = (cfg.t || []).filter((t) => t.length >= 4).map(mk);
+  T_X = (cfg.x || []).filter((t) => t.length >= 3).map(mk);
+  RULES = IMPACT_RULES.map((r) => ({
+    motivo: r.motivo,
+    src: r.src || null,
+    any: (r.any || []).map(mk),
+    all: (r.all || []).map(mk)
+  }));
+  HILITE = [];
+  T_A.forEach((o) => HILITE.push({ rx: o.rx, cls: 'hitA' }));
+  T_B.forEach((o) => HILITE.push({ rx: o.rx, cls: 'hit' }));
+  T_T.forEach((o) => HILITE.push({ rx: o.rx, cls: 'hit' }));
+  RULES.forEach((r) => r.any.concat(r.all).forEach((o) => HILITE.push({ rx: o.rx, cls: 'hit' })));
+}
+function hits(list, text) {
+  const out = [];
+  for (const o of list) {
+    o.rx.lastIndex = 0;
+    if (o.rx.test(text)) out.push(o.t);
+  }
+  return out;
 }
 
-/* ---------- classificação e destaque ---------- */
-function analyze(text) {
-  const found = { a: [], b: [], c: [] };
-  for (const o of TERMS) {
-    o.rx.lastIndex = 0;
-    if (o.rx.test(text)) found[o.grp].push(o.t);
+/* ---------- classificação central ---------- */
+function classify(text, srcTag) {
+  const hitsA = hits(T_A, text);
+  if (hitsA.length) {
+    return { cls: 'direta', motivos: ['Menção direta'], terms: hitsA };
   }
-  let cls = 'outros';
-  if (found.a.length) cls = 'direta';
-  else if (found.b.length) cls = 'recursos';
-  else if (found.c.length) {
-    const low = text.toLowerCase();
-    cls = RESOURCE_MARKERS.some((m) => low.indexOf(m) >= 0) ? 'recursos' : 'normativo';
+  const hitsX = hits(T_X, text.slice(0, 200));
+  const motivos = [];
+  const termsHit = [];
+  const hitsB = hits(T_B, text);
+  if (hitsB.length) {
+    motivos.push('Dossiê monitorado');
+    hitsB.forEach((t) => termsHit.push(t));
   }
-  return { cls, found };
+  for (const r of RULES) {
+    if (r.src && r.src.indexOf(srcTag) < 0) continue;
+    const allOk = r.all.length ? r.all.every((o) => { o.rx.lastIndex = 0; return o.rx.test(text); }) : true;
+    if (!allOk) continue;
+    const anyHits = r.any.length ? hits(r.any, text) : ['—'];
+    if (anyHits.length) {
+      motivos.push(r.motivo);
+      anyHits.slice(0, 3).forEach((t) => { if (t !== '—') termsHit.push(t); });
+    }
+  }
+  if (hitsX.length && motivos.length && !hitsB.length) {
+    return { cls: 'oculto', motivos: ['Excluído: ' + hitsX[0]], terms: termsHit };
+  }
+  if (motivos.length) return { cls: 'impacto', motivos, terms: termsHit };
+  return { cls: 'oculto', motivos: hitsX.length ? ['Excluído: ' + hitsX[0]] : [], terms: [] };
 }
+
+/* ---------- destaque ---------- */
 function highlight(raw) {
   const text = String(raw || '');
   if (!text) return '';
   const ranges = [];
-  for (const o of TERMS) {
-    o.rx.lastIndex = 0;
+  for (const h of HILITE) {
+    h.rx.lastIndex = 0;
     let m; let guard = 0;
-    while ((m = o.rx.exec(text)) && guard++ < 200) {
-      if (m[0].length === 0) { o.rx.lastIndex++; continue; }
-      ranges.push([m.index, m.index + m[0].length, o.grp === 'a' ? 'hitA' : 'hit']);
+    while ((m = h.rx.exec(text)) && guard++ < 200) {
+      if (m[0].length === 0) { h.rx.lastIndex++; continue; }
+      ranges.push([m.index, m.index + m[0].length, h.cls]);
     }
   }
   if (!ranges.length) return esc(text);
@@ -436,7 +515,7 @@ function highlight(raw) {
   return out;
 }
 
-/* ---------- rede (com proxies públicos de CORS quando necessário) ---------- */
+/* ---------- rede ---------- */
 const PROXIES = [
   (u) => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
   (u) => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u),
@@ -459,7 +538,7 @@ async function fetchText(url) {
   throw lastErr || new Error('falha de rede');
 }
 
-/* ---------- fonte: DOU (Imprensa Nacional) ---------- */
+/* ---------- fonte: DOU ---------- */
 function douSearchUrl(term, fromISO, toISO, sec) {
   return 'https://www.in.gov.br/consulta/-/buscar/dou'
     + '?q=' + encodeURIComponent('"' + term + '"')
@@ -480,30 +559,27 @@ async function searchDOU(term, fromISO, toISO, sec) {
       if (data) break;
     }
   }
-  if (!data) throw new Error('estrutura da busca do DOU não reconhecida (tente o link oficial)');
+  if (!data) throw new Error('estrutura da busca do DOU não reconhecida');
   const arr = Array.isArray(data.jsonArray) ? data.jsonArray : [];
-  return arr.map((it) => {
-    const org = stripTags(
+  return arr.map((it) => ({
+    src: 'DOU',
+    qterms: [term],
+    title: stripTags(it.title || it.artType || 'Ato sem título'),
+    date: stripTags(it.pubDate || it.publishDate || ''),
+    org: stripTags(
       it.hierarchyStr
       || (Array.isArray(it.hierarchyList) ? it.hierarchyList.join(' › ') : '')
       || it.artCategory || ''
-    );
-    return {
-      src: 'DOU',
-      terms: [term],
-      title: stripTags(it.title || it.artType || 'Ato sem título'),
-      date: stripTags(it.pubDate || it.publishDate || ''),
-      org,
-      section: stripTags(it.pubName || ''),
-      snippet: stripTags(it.content || ''),
-      link: it.urlTitle ? ('https://www.in.gov.br/web/dou/-/' + it.urlTitle) : url,
-      official: url,
-      txt: ''
-    };
-  });
+    ),
+    section: stripTags(it.pubName || ''),
+    snippet: stripTags(it.content || ''),
+    link: it.urlTitle ? ('https://www.in.gov.br/web/dou/-/' + it.urlTitle) : url,
+    official: url,
+    txt: ''
+  }));
 }
 
-/* ---------- fonte: DOM-BH via Querido Diário ---------- */
+/* ---------- fonte: DOM-BH (Querido Diário) ---------- */
 function qdApiUrl(term, fromISO, toISO) {
   return 'https://api.queridodiario.ok.org.br/gazettes'
     + '?territory_ids=3106200'
@@ -523,10 +599,11 @@ async function searchQD(term, fromISO, toISO) {
     const ex = (g.excerpts && g.excerpts.length) ? g.excerpts : [];
     out.push({
       src: 'DOM-BH',
-      terms: [term],
-      title: 'Diário Oficial do Município de Belo Horizonte'
+      qterms: [term],
+      title: 'DOM-BH'
         + (g.edition_number ? (' · ed. ' + g.edition_number) : '')
-        + (g.is_extra_edition ? ' (edição extra)' : ''),
+        + (g.is_extra_edition ? ' (extra)' : '')
+        + ' — «' + term + '»',
       date: brFromISO(g.date),
       org: 'Prefeitura de Belo Horizonte',
       section: '',
@@ -536,7 +613,7 @@ async function searchQD(term, fromISO, toISO) {
       txt: g.txt_url || ''
     });
   });
-  return { items: out, total: data.total_gazettes || out.length };
+  return out;
 }
 
 /* ---------- progresso ---------- */
@@ -554,7 +631,7 @@ async function run() {
   if (state.running) return;
   const cfg = readTermsFromUI();
   saveCfg(cfg);
-  compileTerms(cfg);
+  compileAll(cfg);
 
   let from = $('#dtFrom').value;
   let to = $('#dtTo').value;
@@ -563,11 +640,14 @@ async function run() {
 
   const useDou = $('#srcDou').checked;
   const useQd = $('#srcQd').checked;
+  const useT = $('#useT').checked;
   if (!useDou && !useQd) { alert('Selecione ao menos uma fonte automática (DOU ou DOM-BH).'); return; }
 
-  const queries = cfg.a.concat(cfg.b).concat($('#useC').checked ? cfg.c : [])
-    .map((t) => t.trim()).filter((t) => t.length >= 4);
-  if (!queries.length) { alert('Cadastre ao menos um termo nos grupos A ou B (§4).'); return; }
+  const nominais = cfg.a.concat(cfg.b).filter((t) => t.length >= 4);
+  const tematicos = useT ? cfg.t.filter((t) => t.length >= 4) : [];
+  if (!nominais.length && !tematicos.length) {
+    alert('Cadastre termos nos grupos A/B ou T (§4).'); return;
+  }
 
   state.running = true;
   state.items = [];
@@ -586,63 +666,59 @@ async function run() {
       const k = it.src + '|' + (it.link || it.title + '|' + it.date);
       if (seen.has(k)) {
         const prev = seen.get(k);
-        it.terms.forEach((t) => { if (prev.terms.indexOf(t) < 0) prev.terms.push(t); });
-        if (!prev.snippet && it.snippet) prev.snippet = it.snippet;
+        it.qterms.forEach((t) => { if (prev.qterms.indexOf(t) < 0) prev.qterms.push(t); });
+        if ((it.snippet || '').length > (prev.snippet || '').length) prev.snippet = it.snippet;
       } else {
         seen.set(k, it);
       }
     });
   }
 
-  if (useDou) {
-    for (const term of queries) {
-      const line = logLine('DOU · “' + esc(term) + '” — consultando…');
+  async function rodada(fonte, termos, tag) {
+    for (const term of termos) {
+      const nome = fonte + ' · ' + tag + ' «' + esc(term) + '»';
+      const line = logLine(nome + ' — consultando…');
       try {
-        const items = await searchDOU(term, from, to, sec);
+        let items;
+        if (fonte === 'DOU') items = await searchDOU(term, from, to, sec);
+        else items = await searchQD(term, from, to);
         absorb(items);
         okCalls++;
         line.className = 'plog ok';
-        line.innerHTML = 'DOU · “' + esc(term) + '” — ' + items.length + ' resultado(s)'
-          + (items.length >= 50 ? ' (limite da página; refine o período)' : '')
-          + ' · <a href="' + esc(douSearchUrl(term, from, to, sec)) + '" target="_blank" rel="noopener">busca oficial</a>';
+        line.innerHTML = nome + ' — ' + items.length + ' resultado(s)'
+          + (fonte === 'DOU'
+            ? ' · <a href="' + esc(douSearchUrl(term, from, to, sec)) + '" target="_blank" rel="noopener">busca oficial</a>'
+            : '');
       } catch (e) {
         errCalls++;
         line.className = 'plog err';
-        line.innerHTML = 'DOU · “' + esc(term) + '” — falha (' + esc(e.message) + ') · '
-          + '<a href="' + esc(douSearchUrl(term, from, to, sec)) + '" target="_blank" rel="noopener">abrir busca oficial</a>';
+        line.innerHTML = nome + ' — falha (' + esc(e.message) + ')'
+          + (fonte === 'DOU'
+            ? ' · <a href="' + esc(douSearchUrl(term, from, to, sec)) + '" target="_blank" rel="noopener">abrir busca oficial</a>'
+            : ' · <a href="https://dom-web.pbh.gov.br/" target="_blank" rel="noopener">abrir DOM-BH</a>');
       }
-      await sleep(400);
+      await sleep(fonte === 'DOU' ? 350 : 150);
     }
   }
 
+  if (useDou) {
+    await rodada('DOU', nominais, 'nominal');
+    await rodada('DOU', tematicos, 'temático');
+  }
   if (useQd) {
-    for (const term of queries) {
-      const line = logLine('DOM-BH · “' + esc(term) + '” — consultando…');
-      try {
-        const res = await searchQD(term, from, to);
-        absorb(res.items);
-        okCalls++;
-        line.className = 'plog ok';
-        line.innerHTML = 'DOM-BH · “' + esc(term) + '” — ' + res.items.length + ' diário(s) com ocorrência'
-          + ' · <a href="https://queridodiario.ok.org.br/" target="_blank" rel="noopener">Querido Diário</a>';
-      } catch (e) {
-        errCalls++;
-        line.className = 'plog err';
-        line.innerHTML = 'DOM-BH · “' + esc(term) + '” — falha (' + esc(e.message) + ') · '
-          + '<a href="https://dom-web.pbh.gov.br/" target="_blank" rel="noopener">abrir DOM-BH</a>';
-      }
-      await sleep(250);
-    }
+    await rodada('DOM-BH', nominais, 'nominal');
+    await rodada('DOM-BH', tematicos, 'temático');
   }
 
   if (errCalls > 0 && okCalls === 0) {
-    logLine('Nenhuma consulta concluída. Se esta página estiver aberta dentro de um aplicativo (visualização restrita), salve o arquivo e abra no navegador — Safari ou Chrome — ou hospede-o; visualizadores embutidos bloqueiam conexões externas.', 'err');
+    logLine('Nenhuma consulta concluída. Se esta página estiver numa visualização embutida, abra pelo link publicado (https).', 'err');
   }
 
   state.items = Array.from(seen.values());
   state.items.forEach((it) => {
-    const a = analyze((it.title || '') + ' — ' + (it.org || '') + ' — ' + (it.snippet || ''));
-    it.cls = a.cls; it.found = a.found;
+    const base = (it.title || '') + ' — ' + (it.org || '') + ' — ' + (it.snippet || '');
+    const c = classify(base, it.src);
+    it.cls = c.cls; it.motivos = c.motivos; it.mterms = c.terms;
     it.ms = $('#priorMS').checked && /minist[eé]rio da sa[uú]de/i.test(it.org || '');
   });
 
@@ -652,66 +728,78 @@ async function run() {
 }
 
 /* ---------- renderização ---------- */
-const CLS_LABEL = {
-  direta: 'FHSFA · menção direta',
-  recursos: 'Recursos & programas',
-  normativo: 'Normativo · saúde',
-  outros: 'Para triagem'
-};
-const SRC_ORDER = { 'DOU': 1, 'DOM-BH': 2 };
+const CLS_LABEL = { direta: 'FHSFA · menção direta', impacto: 'Impacto provável', oculto: 'Filtrado' };
+
+function cardHTML(it) {
+  const chips = (it.cls === 'impacto' && it.motivos.length)
+    ? '<div class="motivos">' + it.motivos.map((m) => '<span class="motivo">' + esc(m) + '</span>').join('') + '</div>'
+    : '';
+  const klass = it.cls === 'direta' ? 'direta' : 'recursos';
+  return '<article class="item ' + klass + '">'
+    + '<span class="carimbo">' + CLS_LABEL[it.cls] + '</span>'
+    + '<h3>' + esc(it.title) + '</h3>'
+    + chips
+    + '<div class="meta">'
+    + (it.date ? esc(it.date) + ' · ' : '')
+    + esc(it.src) + (it.section ? ' ' + esc(it.section) : '') + ' · '
+    + (it.org ? esc(it.org) + ' · ' : '')
+    + (it.ms ? '<b>MS</b> · ' : '')
+    + 'consulta: ' + esc((it.qterms || []).join(', ') || '—')
+    + '</div>'
+    + (it.snippet ? '<div class="trecho">' + highlight(it.snippet) + '</div>' : '')
+    + '<div class="links">'
+    + (it.link ? '<a href="' + esc(it.link) + '" target="_blank" rel="noopener">Abrir publicação</a>' : '')
+    + (it.txt ? '<a href="' + esc(it.txt) + '" target="_blank" rel="noopener">Texto integral</a>' : '')
+    + (it.official ? '<a href="' + esc(it.official) + '" target="_blank" rel="noopener">Fonte oficial</a>' : '')
+    + '</div>'
+    + '</article>';
+}
 
 function render() {
   const root = $('#resultsRoot');
   const sum = $('#resSummary');
   $('#secRes').style.display = 'block';
+  const modoAP = $('#modoAP').checked;
 
-  const counts = { direta: 0, recursos: 0, normativo: 0, outros: 0 };
-  state.items.forEach((it) => { counts[it.cls] = (counts[it.cls] || 0) + 1; });
+  const diretas = state.items.filter((i) => i.cls === 'direta')
+    .sort((a, b) => tsFromBR(b.date) - tsFromBR(a.date));
+  const impactos = state.items.filter((i) => i.cls === 'impacto')
+    .sort((a, b) => (b.motivos.length - a.motivos.length) || (tsFromBR(b.date) - tsFromBR(a.date)));
+  const ocultos = state.items.filter((i) => i.cls === 'oculto')
+    .sort((a, b) => tsFromBR(b.date) - tsFromBR(a.date));
 
   const per = state.ranPeriod;
   sum.innerHTML =
     (per ? '<span class="pill">Período <b>' + esc(brFromISO(per.from)) + '–' + esc(brFromISO(per.to)) + '</b></span>' : '')
-    + '<span class="pill">Menções diretas <b>' + counts.direta + '</b></span>'
-    + '<span class="pill">Recursos & programas <b>' + counts.recursos + '</b></span>'
-    + '<span class="pill">Normativo saúde <b>' + counts.normativo + '</b></span>'
-    + (counts.outros ? '<span class="pill">Triagem <b>' + counts.outros + '</b></span>' : '');
+    + '<span class="pill">Menções diretas <b>' + diretas.length + '</b></span>'
+    + '<span class="pill">Impacto provável <b>' + impactos.length + '</b></span>'
+    + '<span class="pill">Filtrados <b>' + ocultos.length + '</b></span>';
 
   if (!state.items.length) {
-    root.innerHTML = '<p class="vazio">Nenhuma ocorrência para os termos e o período consultados. Amplie o intervalo, revise os termos (§4) ou confira as buscas oficiais pelos links do registro acima.</p>';
+    root.innerHTML = '<p class="vazio">Nenhuma ocorrência para os termos e o período consultados. Amplie o intervalo ou revise os termos (§4); as buscas oficiais ficam nos links do registro acima.</p>';
     return;
   }
 
-  const bySrc = {};
-  state.items.forEach((it) => { (bySrc[it.src] = bySrc[it.src] || []).push(it); });
-  const srcs = Object.keys(bySrc).sort((x, y) => (SRC_ORDER[x] || 9) - (SRC_ORDER[y] || 9) || x.localeCompare(y));
-
-  const clsRank = { direta: 0, recursos: 1, normativo: 2, outros: 3 };
   let html = '';
-  srcs.forEach((src) => {
-    const list = bySrc[src].sort((a, b) =>
-      (clsRank[a.cls] - clsRank[b.cls]) || (tsFromBR(b.date) - tsFromBR(a.date)));
-    html += '<div class="fonteHead">' + esc(src) + ' · ' + list.length + ' item(ns)</div>';
-    list.forEach((it) => {
-      const termos = (it.terms || []).join(', ');
-      html += '<article class="item ' + it.cls + '">'
-        + '<span class="carimbo">' + CLS_LABEL[it.cls] + '</span>'
-        + '<h3>' + esc(it.title) + '</h3>'
-        + '<div class="meta">'
-        + (it.date ? esc(it.date) + ' · ' : '')
-        + (it.section ? esc(it.section) + ' · ' : '')
-        + (it.org ? esc(it.org) + ' · ' : '')
-        + (it.ms ? '<b>MS</b> · ' : '')
-        + 'termos: ' + esc(termos || '—')
-        + '</div>'
-        + (it.snippet ? '<div class="trecho">' + highlight(it.snippet) + '</div>' : '')
-        + '<div class="links">'
-        + (it.link ? '<a href="' + esc(it.link) + '" target="_blank" rel="noopener">Abrir publicação</a>' : '')
-        + (it.txt ? '<a href="' + esc(it.txt) + '" target="_blank" rel="noopener">Texto integral</a>' : '')
-        + (it.official ? '<a href="' + esc(it.official) + '" target="_blank" rel="noopener">Fonte oficial</a>' : '')
-        + '</div>'
-        + '</article>';
-    });
-  });
+  html += '<div class="fonteHead">Prioritário — menção direta · ' + diretas.length + '</div>';
+  html += diretas.length ? diretas.map(cardHTML).join('')
+    : '<p class="vazio">Nenhuma menção nominal à Fundação no período.</p>';
+
+  html += '<div class="fonteHead">Impacto provável · ' + impactos.length + '</div>';
+  html += impactos.length ? impactos.map(cardHTML).join('')
+    : '<p class="vazio">Nenhum ato acionou as regras de impacto no período.</p>';
+
+  if (ocultos.length) {
+    html += '<details class="ocultos"' + (modoAP ? '' : ' open') + '><summary>Filtrados como ruído · '
+      + ocultos.length + ' — toque para revisar</summary><div style="padding:8px 12px 12px">';
+    html += ocultos.map((it) =>
+      '<div class="oitem">[' + esc(it.src) + (it.date ? ' · ' + esc(it.date) : '') + '] '
+      + esc(it.title)
+      + (it.motivos.length ? ' <i>(' + esc(it.motivos[0]) + ')</i>' : '')
+      + (it.link ? ' · <a href="' + esc(it.link) + '" target="_blank" rel="noopener">abrir</a>' : '')
+      + '</div>').join('');
+    html += '</div></details>';
+  }
   root.innerHTML = html;
   const anc = $('#secRes');
   if (anc && typeof anc.scrollIntoView === 'function') {
@@ -726,34 +814,33 @@ function buildReport() {
   const p2 = (n) => String(n).padStart(2, '0');
   const stamp = p2(now.getDate()) + '/' + p2(now.getMonth() + 1) + '/' + now.getFullYear()
     + ' ' + p2(now.getHours()) + ':' + p2(now.getMinutes());
+  const diretas = state.items.filter((i) => i.cls === 'direta').sort((a, b) => tsFromBR(b.date) - tsFromBR(a.date));
+  const impactos = state.items.filter((i) => i.cls === 'impacto').sort((a, b) => tsFromBR(b.date) - tsFromBR(a.date));
+  const nOcultos = state.items.filter((i) => i.cls === 'oculto').length;
+
   const L = [];
   L.push('CLIPPING DE DIÁRIOS OFICIAIS — SAÚDE / FHSFA');
   L.push('Período monitorado: ' + (per ? (brFromISO(per.from) + ' a ' + brFromISO(per.to)) : '—')
     + ' · Gerado em ' + stamp);
   L.push('Fontes: DOU (busca oficial — Imprensa Nacional); DOM-BH (base aberta Querido Diário/OKBR); Minas Gerais (verificação assistida/análise local, quando indicada).');
   L.push('');
-
-  const groups = [
-    ['direta', '1. MENÇÕES DIRETAS À FUNDAÇÃO'],
-    ['recursos', '2. RECURSOS, REPASSES E PROGRAMAS'],
-    ['normativo', '3. MUDANÇAS NORMATIVAS EM SAÚDE'],
-    ['outros', '4. ITENS PARA TRIAGEM']
-  ];
-  groups.forEach((g) => {
-    const list = state.items.filter((it) => it.cls === g[0])
-      .sort((a, b) => tsFromBR(b.date) - tsFromBR(a.date));
-    L.push(g[1] + ' (' + list.length + ')');
-    if (!list.length) { L.push('   Sem ocorrências no período.'); L.push(''); return; }
-    list.forEach((it, i) => {
+  function bloco(titulo, lista, comMotivos) {
+    L.push(titulo + ' (' + lista.length + ')');
+    if (!lista.length) { L.push('   Sem ocorrências no período.'); L.push(''); return; }
+    lista.forEach((it, i) => {
       L.push('   ' + (i + 1) + '. [' + it.src + (it.section ? ' · ' + it.section : '') + (it.date ? ' · ' + it.date : '') + '] ' + it.title);
       if (it.org) L.push('      Órgão: ' + it.org);
-      if (it.terms && it.terms.length) L.push('      Termos: ' + it.terms.join('; '));
+      if (comMotivos && it.motivos.length) L.push('      Gatilhos: ' + it.motivos.join('; '));
       if (it.snippet) L.push('      Trecho: "' + it.snippet.slice(0, 450) + (it.snippet.length > 450 ? '…' : '') + '"');
       if (it.link) L.push('      Link: ' + it.link);
       L.push('');
     });
-  });
-  L.push('Nota metodológica: triagem automática por termos, insensível a acentuação; classificação por regras (menção direta > recursos > normativo). Conferir o inteiro teor na publicação oficial antes de qualquer citação ou providência.');
+  }
+  bloco('1. MENÇÕES DIRETAS À FUNDAÇÃO', diretas, false);
+  bloco('2. ATOS COM IMPACTO PROVÁVEL (por regra do perfil institucional)', impactos, true);
+  L.push('3. ITENS FILTRADOS COMO RUÍDO: ' + nOcultos + ' (relação completa no CSV; dobra revisável na ferramenta)');
+  L.push('');
+  L.push('Nota metodológica: triagem por termos exatos e regras de impacto do perfil institucional (filantropia/CEBAS, contratualização e financiamento SUS, programas ativos, repasses BH/MG, CNES), insensível a acentuação. Conferir o inteiro teor na publicação oficial antes de qualquer citação ou providência.');
   return L.join('\n');
 }
 async function copyReport() {
@@ -784,11 +871,12 @@ function downloadTxt() {
 }
 function downloadCsv() {
   const q = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
-  const rows = [['fonte', 'data', 'classificacao', 'titulo', 'orgao', 'secao', 'termos', 'trecho', 'link'].join(';')];
+  const rows = [['status', 'motivos', 'fonte', 'data', 'titulo', 'orgao', 'secao', 'consultas', 'trecho', 'link'].join(';')];
   state.items.forEach((it) => {
     rows.push([
-      q(it.src), q(it.date), q(CLS_LABEL[it.cls]), q(it.title), q(it.org),
-      q(it.section), q((it.terms || []).join(' | ')), q(it.snippet), q(it.link)
+      q(CLS_LABEL[it.cls]), q((it.motivos || []).join(' | ')), q(it.src), q(it.date),
+      q(it.title), q(it.org), q(it.section), q((it.qterms || []).join(' | ')),
+      q(it.snippet), q(it.link)
     ].join(';'));
   });
   const per = state.ranPeriod;
@@ -829,69 +917,60 @@ function loadPdfjs() {
   });
   return pdfjsReady;
 }
-function scanChunk(text, pageNo, bucket) {
-  for (const o of TERMS) {
-    o.rx.lastIndex = 0;
-    let m; let n = 0;
-    while ((m = o.rx.exec(text)) && n < 2) {
-      if (m[0].length === 0) { o.rx.lastIndex++; continue; }
-      const s = Math.max(0, m.index - 220);
-      const e = Math.min(text.length, m.index + m[0].length + 220);
-      bucket.push({
-        page: pageNo,
-        grp: o.grp,
-        term: o.t,
-        excerpt: (s > 0 ? '…' : '') + text.slice(s, e).replace(/\s+/g, ' ').trim() + (e < text.length ? '…' : '')
-      });
-      n++;
-    }
+function excerptsFor(text, maxN) {
+  const spans = [];
+  for (const h of HILITE) {
+    h.rx.lastIndex = 0;
+    const m = h.rx.exec(text);
+    if (m && m[0].length) spans.push(m.index);
+    if (spans.length >= maxN * 2) break;
   }
+  spans.sort((a, b) => a - b);
+  const out = [];
+  let lastEnd = -1;
+  for (const idx of spans) {
+    if (idx < lastEnd) continue;
+    const s = Math.max(0, idx - 200);
+    const e = Math.min(text.length, idx + 260);
+    out.push((s > 0 ? '…' : '') + text.slice(s, e).replace(/\s+/g, ' ').trim() + (e < text.length ? '…' : ''));
+    lastEnd = e;
+    if (out.length >= maxN) break;
+  }
+  return out;
 }
-function absorbScan(findings, label, dateBR, srcName) {
-  if (!findings.length) return 0;
-  const byPage = new Map();
-  findings.forEach((f) => {
-    const k = f.page == null ? 0 : f.page;
-    if (!byPage.has(k)) byPage.set(k, []);
-    byPage.get(k).push(f);
-  });
-  let added = 0;
-  byPage.forEach((list, page) => {
-    const terms = Array.from(new Set(list.map((f) => f.term)));
-    const excerpts = Array.from(new Set(list.map((f) => f.excerpt))).slice(0, 3);
-    const it = {
-      src: srcName,
-      terms,
-      title: label + (page ? (' — pág. ' + page) : ''),
-      date: dateBR || '',
-      org: 'Imprensa Oficial de Minas Gerais',
-      section: '',
-      snippet: excerpts.join(' ▸ '),
-      link: '',
-      official: 'https://www.jornalminasgerais.mg.gov.br/',
-      txt: ''
-    };
-    const a = analyze(terms.join(' — ') + ' — ' + it.snippet);
-    it.cls = a.cls; it.found = a.found; it.ms = false;
-    state.items.push(it);
-    added++;
-  });
-  return added;
+function absorbLocal(text, pageNo, label, dateBR) {
+  const c = classify(text, 'MG');
+  if (c.cls === 'oculto') return 0;
+  const it = {
+    src: 'Minas Gerais (análise local)',
+    qterms: [label],
+    title: label + (pageNo ? (' — pág. ' + pageNo) : ''),
+    date: dateBR || '',
+    org: 'Imprensa Oficial de Minas Gerais',
+    section: '',
+    snippet: excerptsFor(text, 3).join(' ▸ '),
+    link: '',
+    official: 'https://www.jornalminasgerais.mg.gov.br/',
+    txt: '',
+    cls: c.cls, motivos: c.motivos, mterms: c.terms, ms: false
+  };
+  state.items.push(it);
+  return 1;
 }
 async function scanFile() {
   const inp = $('#pdfFile');
   const st = $('#scanStatus');
   if (!inp.files || !inp.files.length) { st.textContent = 'Selecione um arquivo PDF ou TXT.'; return; }
   const file = inp.files[0];
-  compileTerms(readTermsFromUI());
+  compileAll(readTermsFromUI());
   const label = ($('#mgLabel').value || file.name).trim();
   const dateBR = brFromISO($('#mgDate').value);
-  const findings = [];
+  let added = 0;
   try {
     if (/\.txt$/i.test(file.name) || file.type === 'text/plain') {
       st.textContent = 'Lendo texto…';
       const text = await file.text();
-      scanChunk(text, null, findings);
+      added += absorbLocal(text, null, label, dateBR);
     } else {
       st.textContent = 'Carregando leitor de PDF…';
       await loadPdfjs();
@@ -902,15 +981,13 @@ async function scanFile() {
         const page = await doc.getPage(p);
         const tc = await page.getTextContent();
         const text = tc.items.map((i) => i.str).join(' ');
-        scanChunk(text, p, findings);
+        added += absorbLocal(text, p, label, dateBR);
         if (p % 5 === 0 || p === total) st.textContent = 'Analisando página ' + p + ' de ' + total + '…';
-        if (findings.length > 400) { st.textContent = 'Muitas ocorrências — análise interrompida na página ' + p + '.'; break; }
       }
     }
-    const added = absorbScan(findings, label, dateBR, 'Minas Gerais (análise local)');
     st.textContent = added
-      ? ('Concluído: ' + findings.length + ' ocorrência(s) em ' + added + ' bloco(s). Achados incluídos em §2.')
-      : 'Concluído: nenhum termo monitorado encontrado neste arquivo.';
+      ? ('Concluído: ' + added + ' página(s)/bloco(s) com menção direta ou gatilho de impacto — incluídos em §2.')
+      : 'Concluído: nada relevante segundo os termos e regras atuais.';
     if (added) render();
   } catch (e) {
     st.textContent = 'Falha na análise: ' + e.message + '. Se o PDF for digitalizado (imagem), o texto não é extraível localmente.';
@@ -920,50 +997,14 @@ function scanPasted() {
   const st = $('#scanStatus');
   const text = $('#pasteText').value.trim();
   if (text.length < 40) { st.textContent = 'Cole um trecho maior para análise.'; return; }
-  compileTerms(readTermsFromUI());
+  compileAll(readTermsFromUI());
   const label = ($('#mgLabel').value || 'Trecho colado').trim();
   const dateBR = brFromISO($('#mgDate').value);
-  const findings = [];
-  scanChunk(text, null, findings);
-  const added = absorbScan(findings, label + ' — trecho', dateBR, 'Minas Gerais (análise local)');
+  const added = absorbLocal(text, null, label + ' — trecho', dateBR);
   st.textContent = added
-    ? ('Concluído: ' + findings.length + ' ocorrência(s). Achados incluídos em §2.')
-    : 'Nenhum termo monitorado encontrado no trecho.';
+    ? 'Concluído: o trecho aciona menção direta ou regra de impacto — incluído em §2.'
+    : 'O trecho não aciona os termos nem as regras de impacto atuais.';
   if (added) render();
-}
-
-/* ---------- diagnóstico de conexões ---------- */
-async function diag() {
-  const box = $('#progress');
-  box.classList.add('on');
-  logLine('Diagnóstico — ambiente: ' + location.protocol + '//' + (location.hostname || '(arquivo local)'));
-  let l = logLine('Querido Diário (acesso direto) — testando…');
-  try {
-    const r = await fetch('https://api.queridodiario.ok.org.br/gazettes?territory_ids=3106200&size=1');
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    await r.json();
-    l.className = 'plog ok'; l.textContent = 'Querido Diário (acesso direto) — OK';
-  } catch (e) {
-    l.className = 'plog err'; l.textContent = 'Querido Diário (acesso direto) — falhou: ' + e.message;
-  }
-  const alvo = 'https://www.in.gov.br/robots.txt';
-  for (let i = 0; i < PROXIES.length; i++) {
-    const l2 = logLine('Proxy ' + PROXY_NAMES[i] + ' — testando…');
-    try {
-      const r = await fetch(PROXIES[i](alvo));
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      const t = await r.text();
-      if (!t) throw new Error('resposta vazia');
-      l2.className = 'plog ok'; l2.textContent = 'Proxy ' + PROXY_NAMES[i] + ' — OK';
-    } catch (e) {
-      l2.className = 'plog err'; l2.textContent = 'Proxy ' + PROXY_NAMES[i] + ' — falhou: ' + e.message;
-    }
-  }
-  if (RESTRITO) {
-    logLine('Ambiente restrito detectado — as falhas acima são esperadas até o arquivo ser publicado (aviso no topo da página).', 'err');
-  } else {
-    logLine('Se o Querido Diário e ao menos um proxy estão OK, a varredura deve funcionar normalmente.', 'ok');
-  }
 }
 
 /* ---------- inicialização ---------- */
@@ -975,17 +1016,35 @@ function setRange(days) {
   $('#dtTo').value = fmtISO(to);
 }
 function fillTerms(cfg) {
-  $('#taA').value = cfg.a.join('\n');
-  $('#taB').value = cfg.b.join('\n');
-  $('#taC').value = cfg.c.join('\n');
+  $('#taA').value = (cfg.a || []).join('\n');
+  $('#taB').value = (cfg.b || []).join('\n');
+  $('#taT').value = (cfg.t || []).join('\n');
+  $('#taX').value = (cfg.x || []).join('\n');
+}
+function rulesDoc() {
+  const el = $('#rulesDoc');
+  el.innerHTML = IMPACT_RULES.map((r) =>
+    '<div style="margin-bottom:6px"><b>' + esc(r.motivo) + '</b>'
+    + (r.src ? ' <i>(' + r.src.join(', ') + ')</i>' : '')
+    + ': ' + esc((r.any || []).join('; ')) + '</div>'
+  ).join('')
+  + '<div style="margin-top:8px">Para ajustar estas regras, peça a atualização a quem mantém a ferramenta — elas ficam no código para permanecerem auditáveis.</div>';
 }
 function init() {
-  const cfg = loadCfg() || DEF;
-  fillTerms({ a: cfg.a || DEF.a, b: cfg.b || DEF.b, c: cfg.c || DEF.c });
-  compileTerms(readTermsFromUI());
+  const saved = loadCfg();
+  const cfg = {
+    a: (saved && saved.a) || DEF.a,
+    b: (saved && saved.b) || DEF.b,
+    t: (saved && saved.t) || DEF.t,
+    x: (saved && saved.x) || DEF.x
+  };
+  fillTerms(cfg);
+  compileAll(readTermsFromUI());
+  rulesDoc();
   setRange(7);
   $('#mgDate').value = fmtISO(new Date());
   buildMgLinks();
+
   const envEl = $('#envNote');
   let motivo = '';
   const host = location.hostname || '';
@@ -1021,17 +1080,51 @@ function init() {
   });
   $('#btnSaveTerms').addEventListener('click', () => {
     const c = readTermsFromUI();
-    saveCfg(c); compileTerms(c); buildMgLinks();
+    saveCfg(c); compileAll(c); buildMgLinks();
     $('#termsNote').textContent = storageOk
       ? 'Termos salvos neste navegador.'
       : 'Termos aplicados nesta sessão (ambiente sem gravação local).';
   });
   $('#btnResetTerms').addEventListener('click', () => {
-    fillTerms(DEF); saveCfg(DEF); compileTerms(DEF); buildMgLinks();
+    fillTerms(DEF); saveCfg(DEF); compileAll(DEF); buildMgLinks();
     $('#termsNote').textContent = 'Termos padrão restaurados.';
   });
   $('#btnScanFile').addEventListener('click', scanFile);
   $('#btnScanText').addEventListener('click', scanPasted);
+}
+
+/* ---------- diagnóstico de conexões ---------- */
+async function diag() {
+  const box = $('#progress');
+  box.classList.add('on');
+  logLine('Diagnóstico — ambiente: ' + location.protocol + '//' + (location.hostname || '(arquivo local)'));
+  let l = logLine('Querido Diário (acesso direto) — testando…');
+  try {
+    const r = await fetch('https://api.queridodiario.ok.org.br/gazettes?territory_ids=3106200&size=1');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    await r.json();
+    l.className = 'plog ok'; l.textContent = 'Querido Diário (acesso direto) — OK';
+  } catch (e) {
+    l.className = 'plog err'; l.textContent = 'Querido Diário (acesso direto) — falhou: ' + e.message;
+  }
+  const alvo = 'https://www.in.gov.br/robots.txt';
+  for (let i = 0; i < PROXIES.length; i++) {
+    const l2 = logLine('Proxy ' + PROXY_NAMES[i] + ' — testando…');
+    try {
+      const r = await fetch(PROXIES[i](alvo));
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const t = await r.text();
+      if (!t) throw new Error('resposta vazia');
+      l2.className = 'plog ok'; l2.textContent = 'Proxy ' + PROXY_NAMES[i] + ' — OK';
+    } catch (e) {
+      l2.className = 'plog err'; l2.textContent = 'Proxy ' + PROXY_NAMES[i] + ' — falhou: ' + e.message;
+    }
+  }
+  if (RESTRITO) {
+    logLine('Ambiente restrito detectado — as falhas acima são esperadas até o arquivo ser publicado.', 'err');
+  } else {
+    logLine('Se o Querido Diário e ao menos um proxy estão OK, a varredura deve funcionar normalmente.', 'ok');
+  }
 }
 document.addEventListener('DOMContentLoaded', init);
 </script>
