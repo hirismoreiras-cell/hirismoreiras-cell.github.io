@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#F4F4EF">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Sentinela">
+<title>Sentinela · Diários Oficiais — Saúde &amp; FHSFA</title>
+<meta name="description" content="Varredura local dos diários oficiais (União, Minas Gerais e Belo Horizonte) para mudanças normativas em saúde e menções à Fundação Hospitalar São Francisco de Assis. Sem IA, sem servidor próprio.">
+<style>
+:root{
+  --papel:#F4F4EF;
+  --cartao:#FFFFFF;
+  --tinta:#20241F;
+  --grafite:#5B615D;
+  --selo:#175A45;
+  --selo-claro:#E7F0EB;
+  --carimbo:#A8231A;
+  --carimbo-claro:#F7E9E7;
+  --linha:#D9D7CC;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --serif:Georgia,"Times New Roman",Times,serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--papel);color:var(--tinta);font-family:var(--sans);font-size:15px;line-height:1.55}
+a{color:var(--selo)}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--selo);outline-offset:2px}
+.wrap{max-width:760px;margin:0 auto;padding:0 14px 60px}
+
+/* ---------- masthead ---------- */
+.masthead{padding:26px 0 14px;text-align:center;border-bottom:3px double var(--tinta);margin-bottom:6px}
+.masthead .orgao{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--grafite)}
+.masthead h1{font-family:var(--serif);font-weight:700;font-size:34px;letter-spacing:.14em;text-transform:uppercase;margin:6px 0 2px}
+.masthead h1 span{color:var(--selo)}
+.masthead .sub{font-family:var(--serif);font-style:italic;font-size:14px;color:var(--grafite)}
+.masthead .fontes{margin-top:10px;padding-top:8px;border-top:1px solid var(--linha);font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--grafite);display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+.masthead .fontes b{color:var(--tinta);font-weight:600}
+
+.banner{background:#FDF6E3;border:1px solid #E2C979;border-left:3px solid var(--carimbo);border-radius:3px;padding:10px 12px;font-size:12.5px;color:#5A4A18;margin:14px 0 4px}
+.banner b{color:var(--carimbo)}
+.banner a{color:inherit;text-decoration:underline}
+
+/* ---------- seções ---------- */
+section{margin:22px 0}
+.secHead{display:flex;align-items:baseline;gap:10px;border-bottom:1px solid var(--tinta);padding-bottom:4px;margin-bottom:12px}
+.secHead h2{font-family:var(--serif);font-size:17px;letter-spacing:.06em;text-transform:uppercase;font-weight:700}
+.secHead .num{font-family:var(--mono);font-size:11px;color:var(--grafite)}
+.hint{font-size:12.5px;color:var(--grafite)}
+
+/* ---------- controles ---------- */
+.card{background:var(--cartao);border:1px solid var(--linha);border-radius:4px;padding:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+label.fld{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--grafite);margin-bottom:4px}
+input[type=date],select,input[type=text]{width:100%;padding:9px 10px;border:1px solid var(--linha);border-radius:3px;background:#FDFDFB;font-family:var(--mono);font-size:13.5px;color:var(--tinta)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.chip{border:1px solid var(--linha);background:#FDFDFB;border-radius:999px;padding:5px 11px;font-family:var(--mono);font-size:11.5px;color:var(--grafite);cursor:pointer}
+.chip:active{background:var(--selo-claro)}
+.opts{margin-top:12px;display:grid;gap:8px}
+.opt{display:flex;align-items:flex-start;gap:8px;font-size:13.5px}
+.opt input{margin-top:3px;accent-color:var(--selo)}
+.opt small{display:block;color:var(--grafite);font-size:12px}
+.selrow{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
+.selrow select{width:auto;flex:1;min-width:160px}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1.5px solid var(--tinta);background:var(--tinta);color:#fff;font-family:var(--mono);font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;padding:12px 16px;border-radius:3px;cursor:pointer;width:100%;margin-top:14px}
+.btn[disabled]{opacity:.55;cursor:default}
+.btn.sec{background:transparent;color:var(--tinta);width:auto;padding:8px 12px;margin-top:0}
+.btn.mini{width:auto;padding:7px 10px;font-size:11px;margin-top:0;background:transparent;color:var(--tinta)}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+
+/* ---------- progresso ---------- */
+#progress{margin-top:12px;display:none}
+#progress.on{display:block}
+.plog{font-family:var(--mono);font-size:11.5px;color:var(--grafite);border-left:2px solid var(--linha);padding:2px 0 2px 10px;margin:3px 0;word-break:break-word}
+.plog.ok{border-color:var(--selo);color:var(--tinta)}
+.plog.err{border-color:var(--carimbo);color:var(--carimbo)}
+
+/* ---------- resultados ---------- */
+.resumo{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.pill{font-family:var(--mono);font-size:11px;letter-spacing:.06em;border:1px solid var(--linha);border-radius:3px;padding:6px 10px;background:var(--cartao)}
+.pill b{font-size:14px}
+.fonteHead{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--grafite);border-bottom:1px solid var(--linha);padding-bottom:3px;margin:18px 0 8px}
+.item{background:var(--cartao);border:1px solid var(--linha);border-left:3px solid var(--linha);border-radius:3px;padding:12px 12px 10px;margin-bottom:10px}
+.item.direta{border-left-color:var(--carimbo)}
+.item.recursos{border-left-color:var(--selo)}
+.item.normativo{border-left-color:var(--tinta)}
+.carimbo{display:inline-block;font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;border:1.5px solid currentColor;border-radius:2px;padding:2px 7px;transform:rotate(-1.6deg);margin-bottom:7px}
+.direta .carimbo{color:var(--carimbo);background:var(--carimbo-claro)}
+.recursos .carimbo{color:var(--selo);background:var(--selo-claro)}
+.normativo .carimbo{color:var(--tinta);background:#EFEFE8}
+.outros .carimbo{color:var(--grafite)}
+.item h3{font-family:var(--serif);font-size:15.5px;line-height:1.35;font-weight:700;margin-bottom:3px}
+.meta{font-family:var(--mono);font-size:10.5px;color:var(--grafite);letter-spacing:.03em;margin-bottom:6px;word-break:break-word}
+.trecho{font-size:13.5px;color:#33382F;border-left:2px solid var(--linha);padding-left:9px;margin:6px 0;word-break:break-word}
+.trecho mark{background:#F3E8B5;color:inherit;padding:0 1px}
+.trecho mark.hitA{background:var(--carimbo-claro);box-shadow:inset 0 -1px 0 var(--carimbo)}
+.links{margin-top:6px;font-family:var(--mono);font-size:11px;display:flex;gap:12px;flex-wrap:wrap}
+.vazio{font-size:13px;color:var(--grafite);font-style:italic;padding:6px 0}
+
+/* ---------- MG / scanner ---------- */
+.mgLinks{display:grid;gap:6px;margin:10px 0;font-family:var(--mono);font-size:12px}
+textarea{width:100%;min-height:96px;border:1px solid var(--linha);border-radius:3px;background:#FDFDFB;padding:9px 10px;font-family:var(--mono);font-size:12.5px;color:var(--tinta)}
+input[type=file]{font-size:12.5px;font-family:var(--mono);width:100%}
+.dz{border:1.5px dashed var(--linha);border-radius:4px;padding:12px;background:#FBFBF7;margin-top:8px}
+
+/* ---------- termos ---------- */
+details{border:1px solid var(--linha);border-radius:4px;background:var(--cartao)}
+summary{cursor:pointer;padding:12px 14px;font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase}
+.dbody{padding:0 14px 14px}
+.grp{margin-top:12px}
+.grp .gt{display:flex;align-items:baseline;gap:8px;margin-bottom:4px}
+.grp .gt b{font-family:var(--serif);font-size:14px}
+.grp .gt span{font-size:11.5px;color:var(--grafite)}
+
+/* ---------- rodapé ---------- */
+footer{margin-top:34px;border-top:3px double var(--tinta);padding-top:12px;font-size:12px;color:var(--grafite)}
+footer p{margin-bottom:8px}
+footer .selof{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;text-align:center;margin-top:14px}
+
+@media (max-width:420px){
+  .masthead h1{font-size:27px;letter-spacing:.1em}
+  .grid2{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead">
+  <div class="orgao">Uso interno · Controladoria / UCC — FHSFA</div>
+  <h1>Senti<span>nela</span></h1>
+  <div class="sub">Clipping de diários oficiais — saúde, recursos e menções institucionais</div>
+  <div class="fontes"><b>União</b> · DOU<span>—</span><b>Minas Gerais</b> · IOF<span>—</span><b>Belo Horizonte</b> · DOM</div>
+</header>
+
+<div id="envNote"><div class="banner"><b>Aviso:</b> se os botões desta página não respondem, você está numa visualização sem scripts (ex.: pré-visualização do app Arquivos do iPhone). Publique o arquivo e abra pelo link — veja «Como publicar» logo abaixo.</div></div>
+
+<details id="pubHelp">
+  <summary>Como publicar este arquivo (necessário no iPhone)</summary>
+  <div class="dbody">
+    <p class="hint" style="margin-top:10px">O iPhone não executa páginas locais: o app Arquivos mostra apenas uma visualização, sem os botões, e visualizações embutidas em aplicativos bloqueiam as consultas às fontes. Publicando o arquivo uma única vez, ele passa a abrir por um endereço https normal, em qualquer aparelho.</p>
+    <p class="hint" style="margin-top:8px"><b>GitHub Pages (gratuito):</b> 1) crie conta em github.com; 2) New repository → nome <span style="font-family:var(--mono)">sentinela</span> → Public → Create; 3) na tela do repositório, toque em «uploading an existing file» e envie este <span style="font-family:var(--mono)">index.html</span> → Commit; 4) Settings → Pages → Deploy from a branch → main → Save; 5) em cerca de um minuto o site estará em <span style="font-family:var(--mono)">https://seu-usuario.github.io/sentinela/</span>. Depois, no Safari: Compartilhar → Adicionar à Tela de Início.</p>
+  </div>
+</details>
+
+<!-- ============ 1. VARREDURA ============ -->
+<section id="painel">
+  <div class="secHead"><span class="num">§1</span><h2>Varredura automática</h2></div>
+  <div class="card">
+    <div class="grid2">
+      <div><label class="fld" for="dtFrom">Publicações desde</label><input type="date" id="dtFrom"></div>
+      <div><label class="fld" for="dtTo">até</label><input type="date" id="dtTo"></div>
+    </div>
+    <div class="chips">
+      <button class="chip" data-range="0">Hoje</button>
+      <button class="chip" data-range="7">Últimos 7 dias</button>
+      <button class="chip" data-range="15">Últimos 15 dias</button>
+      <button class="chip" data-range="30">Últimos 30 dias</button>
+    </div>
+    <div class="opts">
+      <label class="opt"><input type="checkbox" id="srcDou" checked><span><b>União — DOU</b> (busca oficial da Imprensa Nacional)<small>Consulta os termos dos grupos A e B na busca do in.gov.br.</small></span></label>
+      <label class="opt"><input type="checkbox" id="srcQd" checked><span><b>Belo Horizonte — DOM</b> (via base aberta Querido Diário / OKBR)<small>Busca no texto integral do Diário Oficial do Município. A base pode ter defasagem de alguns dias.</small></span></label>
+      <label class="opt"><input type="checkbox" id="useC"><span>Usar também os termos do grupo C como consultas<small>Amplia a cobertura normativa (portarias, resoluções, incentivos), mas gera mais resultados para triagem.</small></span></label>
+      <label class="opt"><input type="checkbox" id="priorMS" checked><span>Sinalizar atos do Ministério da Saúde no DOU</span></label>
+    </div>
+    <div class="selrow">
+      <label class="fld" for="douSec" style="margin:0">Seção DOU</label>
+      <select id="douSec">
+        <option value="todos" selected>Todas as seções</option>
+        <option value="do1">Seção 1 — atos normativos</option>
+        <option value="do3">Seção 3 — extratos, convênios, licitações</option>
+      </select>
+    </div>
+    <button class="btn" id="btnRun">Executar varredura</button>
+    <button class="btn mini" id="btnDiag" style="margin-top:10px">Testar conexões</button>
+    <div id="progress"></div>
+  </div>
+</section>
+
+<!-- ============ 2. RESULTADOS ============ -->
+<section id="secRes" style="display:none">
+  <div class="secHead"><span class="num">§2</span><h2>Achados do período</h2></div>
+  <div class="resumo" id="resSummary"></div>
+  <div id="resultsRoot"></div>
+  <div class="btnrow">
+    <button class="btn sec" id="btnReport">Copiar relatório</button>
+    <button class="btn mini" id="btnTxt">Baixar .txt</button>
+    <button class="btn mini" id="btnCsv">Baixar .csv</button>
+    <button class="btn mini" id="btnClear">Limpar</button>
+  </div>
+  <p class="hint" style="margin-top:8px">O relatório sai em texto corrido, com fonte, data, trecho e link de cada achado — pronto para colar em e-mail ou nota interna. Confirme sempre o teor na publicação oficial antes de citar.</p>
+</section>
+
+<!-- ============ 3. MINAS GERAIS ============ -->
+<section id="secMg">
+  <div class="secHead"><span class="num">§3</span><h2>Minas Gerais — verificação assistida</h2></div>
+  <div class="card">
+    <p class="hint">O Diário Oficial «Minas Gerais» (IOF) não oferece API pública de busca; o portal do Estado também costuma bloquear consultas automatizadas. Por isso este módulo funciona em dois passos: abra a edição pelos atalhos abaixo e, se quiser a triagem automática, traga o PDF (ou o texto) para análise <b>local, no seu aparelho</b> — nada é enviado a servidor algum.</p>
+    <div class="mgLinks" id="mgLinks"></div>
+    <div class="dz">
+      <label class="fld" for="pdfFile">Analisar edição localmente (PDF ou TXT)</label>
+      <input type="file" id="pdfFile" accept=".pdf,.txt,application/pdf,text/plain">
+      <div class="grid2" style="margin-top:8px">
+        <div><label class="fld" for="mgDate">Data da edição</label><input type="date" id="mgDate"></div>
+        <div><label class="fld" for="mgLabel">Identificação</label><input type="text" id="mgLabel" value="Minas Gerais — Caderno 1"></div>
+      </div>
+      <label class="fld" for="pasteText" style="margin-top:10px">…ou cole aqui um trecho / texto da edição</label>
+      <textarea id="pasteText" placeholder="Cole o texto copiado do diário para triagem pelos mesmos termos."></textarea>
+      <div class="btnrow">
+        <button class="btn sec" id="btnScanFile">Analisar arquivo</button>
+        <button class="btn mini" id="btnScanText">Analisar texto colado</button>
+      </div>
+      <div id="scanStatus" class="hint" style="margin-top:8px"></div>
+    </div>
+    <p class="hint" style="margin-top:10px">Os achados de MG entram nas mesmas categorias e no mesmo relatório da varredura automática. O analisador local também serve para qualquer PDF de diário (DOU, DOM-BH, cadernos avulsos).</p>
+  </div>
+</section>
+
+<!-- ============ 4. TERMOS ============ -->
+<section id="secTerms">
+  <div class="secHead"><span class="num">§4</span><h2>Termos monitorados</h2></div>
+  <details>
+    <summary>Editar grupos de termos (A · B · C)</summary>
+    <div class="dbody">
+      <div class="grp">
+        <div class="gt"><b>Grupo A — menção direta à Fundação</b><span>um termo por linha · viram consultas e recebem o carimbo vermelho</span></div>
+        <textarea id="taA" rows="4"></textarea>
+      </div>
+      <div class="grp">
+        <div class="gt"><b>Grupo B — programas e dossiês de interesse</b><span>também viram consultas</span></div>
+        <textarea id="taB" rows="4"></textarea>
+      </div>
+      <div class="grp">
+        <div class="gt"><b>Grupo C — vocabulário normativo de saúde</b><span>classifica os achados; vira consulta só se marcado em §1</span></div>
+        <textarea id="taC" rows="7"></textarea>
+      </div>
+      <div class="btnrow">
+        <button class="btn sec" id="btnSaveTerms">Salvar termos</button>
+        <button class="btn mini" id="btnResetTerms">Restaurar padrão</button>
+      </div>
+      <p class="hint" style="margin-top:8px" id="termsNote">Os termos ficam gravados apenas neste navegador.</p>
+    </div>
+  </details>
+</section>
+
+<footer>
+  <p><b>Método.</b> União: consulta à busca oficial da Imprensa Nacional (in.gov.br), termo a termo, no período indicado; quando o navegador exige, a leitura passa por um proxy público de CORS (AllOrigins, CodeTabs ou corsproxy), sem armazenamento próprio. Belo Horizonte: API pública do projeto Querido Diário (Open Knowledge Brasil), que indexa o texto integral do DOM. Minas Gerais: verificação assistida com análise local do PDF/texto da edição.</p>
+  <p><b>Limitações.</b> Ferramenta de triagem — não substitui a leitura da publicação oficial nem constitui parecer. Bases de terceiros podem ter defasagem ou indisponibilidade; a busca do DOU retorna até 50 itens por termo/período (refine as datas se necessário).</p>
+  <p><b>Privacidade.</b> Página estática, sem inteligência artificial, sem servidor próprio, sem coleta de dados. As únicas conexões são às fontes públicas citadas e, para PDFs, à biblioteca pdf.js (cdnjs) carregada sob demanda.</p>
+  <div class="selof">— Sentinela · edição estática · verifique sempre o original —</div>
+</footer>
+
+</div>
+<script>
+'use strict';
+/* ============================================================
+   SENTINELA — clipping de diários oficiais (União / MG / BH)
+   Página estática. Sem IA, sem backend. Fontes públicas:
+   - DOU: busca oficial da Imprensa Nacional (in.gov.br)
+   - DOM-BH: API pública do Querido Diário (OKBR), IBGE 3106200
+   - MG: verificação assistida + análise local de PDF (pdf.js)
+   ============================================================ */
+
+/* ---------- termos padrão ---------- */
+const DEF = {
+  a: [
+    'Fundação Hospitalar São Francisco de Assis',
+    'Complexo Hospitalar São Francisco',
+    'Hospital São Francisco de Assis'
+  ],
+  b: [
+    'Agora Tem Especialistas',
+    'Maternidade Santa Fé',
+    'Hospital Regional de Sete Lagoas'
+  ],
+  c: [
+    'saúde', 'SUS', 'hospitalar', 'atenção especializada',
+    'credenciamento', 'habilitação', 'incentivo financeiro',
+    'custeio', 'repasse', 'emenda parlamentar', 'convênio',
+    'Transferegov', 'fundo nacional de saúde', 'fundo estadual de saúde',
+    'fundo municipal de saúde', 'CNES', 'média e alta complexidade',
+    'teto financeiro', 'contrato de gestão', 'filantrópic', 'CEBAS',
+    'deliberação CIB', 'resolução SES'
+  ]
+};
+const RESOURCE_MARKERS = [
+  'repasse', 'emenda', 'incentivo', 'custeio', 'investimento',
+  'convênio', 'convenio', 'transferegov', 'fundo nacional de saúde',
+  'fundo nacional de saude', 'fundo estadual de saúde', 'fundo estadual de saude',
+  'fundo municipal de saúde', 'fundo municipal de saude',
+  'habilitação', 'habilitacao', 'crédito', 'credito',
+  'transferência', 'transferencia', 'termo de fomento', 'contrato de gestão',
+  'contrato de gestao', 'recurso financeiro', 'recursos financeiros'
+];
+
+/* ---------- armazenamento (com tolerância a ambientes restritos) ---------- */
+const KEY = 'sentinela_fhsfa_v1';
+const memStore = {};
+let storageOk = true;
+function saveCfg(cfg) {
+  const raw = JSON.stringify(cfg);
+  try { localStorage.setItem(KEY, raw); storageOk = true; }
+  catch (e) { memStore[KEY] = raw; storageOk = false; }
+}
+function loadCfg() {
+  let raw = null;
+  try { raw = localStorage.getItem(KEY); }
+  catch (e) { raw = memStore[KEY] || null; storageOk = false; }
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch (e) { return null; }
+}
+
+/* ---------- utilidades ---------- */
+const $ = (s) => document.querySelector(s);
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+  ));
+}
+function stripTags(s) {
+  return String(s || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+}
+function fmtISO(d) {
+  const p = (n) => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+}
+function brFromISO(iso) {
+  if (!iso) return '';
+  const m = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? (m[3] + '/' + m[2] + '/' + m[1]) : String(iso);
+}
+function douFromISO(iso) {
+  const m = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? (m[3] + '-' + m[2] + '-' + m[1]) : '';
+}
+function tsFromBR(br) {
+  const m = String(br || '').match(/(\d{2})\/(\d{2})\/(\d{4})/);
+  return m ? new Date(+m[3], +m[2] - 1, +m[1]).getTime() : 0;
+}
+function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
+
+/* ---------- busca insensível a acentos ---------- */
+const ACC = {
+  a: 'aáàâãä', e: 'eéèêë', i: 'iíìîï', o: 'oóòôõö',
+  u: 'uúùûü', c: 'cç', n: 'nñ', y: 'yý'
+};
+const CLS = {};
+Object.keys(ACC).forEach((base) => {
+  const set = ACC[base];
+  const cls = '[' + set + ']';
+  for (const v of set) CLS[v] = cls;
+});
+const RX_SPECIALS = '.*+?^${}()|[]\\/';
+function accentRegex(term) {
+  let out = '';
+  for (const ch of String(term)) {
+    const lc = ch.toLowerCase();
+    if (/\s/.test(ch)) { out += '\\s+'; continue; }
+    if (CLS[lc]) { out += CLS[lc]; continue; }
+    if (/[a-z0-9]/.test(lc)) { out += lc; continue; }
+    if (RX_SPECIALS.indexOf(ch) >= 0) { out += '\\' + ch; continue; }
+    out += ch;
+  }
+  try { return new RegExp(out, 'giu'); }
+  catch (e) { return new RegExp(out, 'gi'); }
+}
+
+/* ---------- estado ---------- */
+let TERMS = [];      // [{t, grp, rx}]
+let state = { items: [], running: false, ranPeriod: null };
+
+function readTermsFromUI() {
+  const grab = (id) => $(id).value.split('\n').map((x) => x.trim()).filter(Boolean);
+  return { a: grab('#taA'), b: grab('#taB'), c: grab('#taC') };
+}
+function compileTerms(cfg) {
+  TERMS = [];
+  ['a', 'b', 'c'].forEach((g) => {
+    (cfg[g] || []).forEach((t) => {
+      if (t.length < 3) return;
+      TERMS.push({ t, grp: g, rx: accentRegex(t) });
+    });
+  });
+}
+
+/* ---------- classificação e destaque ---------- */
+function analyze(text) {
+  const found = { a: [], b: [], c: [] };
+  for (const o of TERMS) {
+    o.rx.lastIndex = 0;
+    if (o.rx.test(text)) found[o.grp].push(o.t);
+  }
+  let cls = 'outros';
+  if (found.a.length) cls = 'direta';
+  else if (found.b.length) cls = 'recursos';
+  else if (found.c.length) {
+    const low = text.toLowerCase();
+    cls = RESOURCE_MARKERS.some((m) => low.indexOf(m) >= 0) ? 'recursos' : 'normativo';
+  }
+  return { cls, found };
+}
+function highlight(raw) {
+  const text = String(raw || '');
+  if (!text) return '';
+  const ranges = [];
+  for (const o of TERMS) {
+    o.rx.lastIndex = 0;
+    let m; let guard = 0;
+    while ((m = o.rx.exec(text)) && guard++ < 200) {
+      if (m[0].length === 0) { o.rx.lastIndex++; continue; }
+      ranges.push([m.index, m.index + m[0].length, o.grp === 'a' ? 'hitA' : 'hit']);
+    }
+  }
+  if (!ranges.length) return esc(text);
+  ranges.sort((x, y) => x[0] - y[0] || y[1] - x[1]);
+  const merged = [];
+  for (const r of ranges) {
+    const last = merged[merged.length - 1];
+    if (last && r[0] < last[1]) {
+      last[1] = Math.max(last[1], r[1]);
+      if (r[2] === 'hitA') last[2] = 'hitA';
+    } else merged.push(r.slice());
+  }
+  let out = ''; let pos = 0;
+  for (const seg of merged) {
+    out += esc(text.slice(pos, seg[0]));
+    out += '<mark class="' + seg[2] + '">' + esc(text.slice(seg[0], seg[1])) + '</mark>';
+    pos = seg[1];
+  }
+  out += esc(text.slice(pos));
+  return out;
+}
+
+/* ---------- rede (com proxies públicos de CORS quando necessário) ---------- */
+const PROXIES = [
+  (u) => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
+  (u) => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u),
+  (u) => 'https://corsproxy.io/?url=' + encodeURIComponent(u)
+];
+const PROXY_NAMES = ['AllOrigins', 'CodeTabs', 'corsproxy.io'];
+let RESTRITO = false;
+async function fetchText(url) {
+  const attempts = [(u) => u].concat(PROXIES);
+  let lastErr = null;
+  for (const wrap of attempts) {
+    try {
+      const r = await fetch(wrap(url), { headers: { Accept: 'text/html,application/json;q=0.9,*/*;q=0.8' } });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const t = await r.text();
+      if (!t) throw new Error('resposta vazia');
+      return t;
+    } catch (e) { lastErr = e; }
+  }
+  throw lastErr || new Error('falha de rede');
+}
+
+/* ---------- fonte: DOU (Imprensa Nacional) ---------- */
+function douSearchUrl(term, fromISO, toISO, sec) {
+  return 'https://www.in.gov.br/consulta/-/buscar/dou'
+    + '?q=' + encodeURIComponent('"' + term + '"')
+    + '&s=' + encodeURIComponent(sec)
+    + '&exactDate=personalizado&sortType=0&delta=50'
+    + '&publishFrom=' + douFromISO(fromISO)
+    + '&publishTo=' + douFromISO(toISO)
+    + '&currentPage=1';
+}
+async function searchDOU(term, fromISO, toISO, sec) {
+  const url = douSearchUrl(term, fromISO, toISO, sec);
+  const html = await fetchText(url);
+  let data = null;
+  const scripts = html.matchAll(/<script[^>]*type\s*=\s*["']application\/json["'][^>]*>([\s\S]*?)<\/script>/gi);
+  for (const s of scripts) {
+    if (s[1].indexOf('jsonArray') >= 0) {
+      try { data = JSON.parse(s[1]); } catch (e) { /* tenta o próximo */ }
+      if (data) break;
+    }
+  }
+  if (!data) throw new Error('estrutura da busca do DOU não reconhecida (tente o link oficial)');
+  const arr = Array.isArray(data.jsonArray) ? data.jsonArray : [];
+  return arr.map((it) => {
+    const org = stripTags(
+      it.hierarchyStr
+      || (Array.isArray(it.hierarchyList) ? it.hierarchyList.join(' › ') : '')
+      || it.artCategory || ''
+    );
+    return {
+      src: 'DOU',
+      terms: [term],
+      title: stripTags(it.title || it.artType || 'Ato sem título'),
+      date: stripTags(it.pubDate || it.publishDate || ''),
+      org,
+      section: stripTags(it.pubName || ''),
+      snippet: stripTags(it.content || ''),
+      link: it.urlTitle ? ('https://www.in.gov.br/web/dou/-/' + it.urlTitle) : url,
+      official: url,
+      txt: ''
+    };
+  });
+}
+
+/* ---------- fonte: DOM-BH via Querido Diário ---------- */
+function qdApiUrl(term, fromISO, toISO) {
+  return 'https://api.queridodiario.ok.org.br/gazettes'
+    + '?territory_ids=3106200'
+    + '&querystring=' + encodeURIComponent('"' + term + '"')
+    + '&published_since=' + fromISO
+    + '&published_until=' + toISO
+    + '&number_of_excerpts=3&excerpt_size=420&size=20';
+}
+async function searchQD(term, fromISO, toISO) {
+  const url = qdApiUrl(term, fromISO, toISO);
+  const txt = await fetchText(url);
+  let data;
+  try { data = JSON.parse(txt); }
+  catch (e) { throw new Error('resposta inesperada do Querido Diário'); }
+  const out = [];
+  (data.gazettes || []).forEach((g) => {
+    const ex = (g.excerpts && g.excerpts.length) ? g.excerpts : [];
+    out.push({
+      src: 'DOM-BH',
+      terms: [term],
+      title: 'Diário Oficial do Município de Belo Horizonte'
+        + (g.edition_number ? (' · ed. ' + g.edition_number) : '')
+        + (g.is_extra_edition ? ' (edição extra)' : ''),
+      date: brFromISO(g.date),
+      org: 'Prefeitura de Belo Horizonte',
+      section: '',
+      snippet: stripTags(ex.join(' … ')),
+      link: g.url || g.txt_url || 'https://dom-web.pbh.gov.br/',
+      official: 'https://dom-web.pbh.gov.br/',
+      txt: g.txt_url || ''
+    });
+  });
+  return { items: out, total: data.total_gazettes || out.length };
+}
+
+/* ---------- progresso ---------- */
+function logLine(html, cls) {
+  const box = $('#progress');
+  const div = document.createElement('div');
+  div.className = 'plog' + (cls ? (' ' + cls) : '');
+  div.innerHTML = html;
+  box.appendChild(div);
+  return div;
+}
+
+/* ---------- varredura ---------- */
+async function run() {
+  if (state.running) return;
+  const cfg = readTermsFromUI();
+  saveCfg(cfg);
+  compileTerms(cfg);
+
+  let from = $('#dtFrom').value;
+  let to = $('#dtTo').value;
+  if (!from || !to) { alert('Informe o período da varredura.'); return; }
+  if (from > to) { const t = from; from = to; to = t; $('#dtFrom').value = from; $('#dtTo').value = to; }
+
+  const useDou = $('#srcDou').checked;
+  const useQd = $('#srcQd').checked;
+  if (!useDou && !useQd) { alert('Selecione ao menos uma fonte automática (DOU ou DOM-BH).'); return; }
+
+  const queries = cfg.a.concat(cfg.b).concat($('#useC').checked ? cfg.c : [])
+    .map((t) => t.trim()).filter((t) => t.length >= 4);
+  if (!queries.length) { alert('Cadastre ao menos um termo nos grupos A ou B (§4).'); return; }
+
+  state.running = true;
+  state.items = [];
+  state.ranPeriod = { from, to };
+  const btn = $('#btnRun');
+  btn.disabled = true; btn.textContent = 'Consultando fontes…';
+  const box = $('#progress');
+  box.innerHTML = ''; box.classList.add('on');
+
+  const sec = $('#douSec').value;
+  const seen = new Map();
+  let okCalls = 0; let errCalls = 0;
+
+  function absorb(list) {
+    list.forEach((it) => {
+      const k = it.src + '|' + (it.link || it.title + '|' + it.date);
+      if (seen.has(k)) {
+        const prev = seen.get(k);
+        it.terms.forEach((t) => { if (prev.terms.indexOf(t) < 0) prev.terms.push(t); });
+        if (!prev.snippet && it.snippet) prev.snippet = it.snippet;
+      } else {
+        seen.set(k, it);
+      }
+    });
+  }
+
+  if (useDou) {
+    for (const term of queries) {
+      const line = logLine('DOU · “' + esc(term) + '” — consultando…');
+      try {
+        const items = await searchDOU(term, from, to, sec);
+        absorb(items);
+        okCalls++;
+        line.className = 'plog ok';
+        line.innerHTML = 'DOU · “' + esc(term) + '” — ' + items.length + ' resultado(s)'
+          + (items.length >= 50 ? ' (limite da página; refine o período)' : '')
+          + ' · <a href="' + esc(douSearchUrl(term, from, to, sec)) + '" target="_blank" rel="noopener">busca oficial</a>';
+      } catch (e) {
+        errCalls++;
+        line.className = 'plog err';
+        line.innerHTML = 'DOU · “' + esc(term) + '” — falha (' + esc(e.message) + ') · '
+          + '<a href="' + esc(douSearchUrl(term, from, to, sec)) + '" target="_blank" rel="noopener">abrir busca oficial</a>';
+      }
+      await sleep(400);
+    }
+  }
+
+  if (useQd) {
+    for (const term of queries) {
+      const line = logLine('DOM-BH · “' + esc(term) + '” — consultando…');
+      try {
+        const res = await searchQD(term, from, to);
+        absorb(res.items);
+        okCalls++;
+        line.className = 'plog ok';
+        line.innerHTML = 'DOM-BH · “' + esc(term) + '” — ' + res.items.length + ' diário(s) com ocorrência'
+          + ' · <a href="https://queridodiario.ok.org.br/" target="_blank" rel="noopener">Querido Diário</a>';
+      } catch (e) {
+        errCalls++;
+        line.className = 'plog err';
+        line.innerHTML = 'DOM-BH · “' + esc(term) + '” — falha (' + esc(e.message) + ') · '
+          + '<a href="https://dom-web.pbh.gov.br/" target="_blank" rel="noopener">abrir DOM-BH</a>';
+      }
+      await sleep(250);
+    }
+  }
+
+  if (errCalls > 0 && okCalls === 0) {
+    logLine('Nenhuma consulta concluída. Se esta página estiver aberta dentro de um aplicativo (visualização restrita), salve o arquivo e abra no navegador — Safari ou Chrome — ou hospede-o; visualizadores embutidos bloqueiam conexões externas.', 'err');
+  }
+
+  state.items = Array.from(seen.values());
+  state.items.forEach((it) => {
+    const a = analyze((it.title || '') + ' — ' + (it.org || '') + ' — ' + (it.snippet || ''));
+    it.cls = a.cls; it.found = a.found;
+    it.ms = $('#priorMS').checked && /minist[eé]rio da sa[uú]de/i.test(it.org || '');
+  });
+
+  render();
+  state.running = false;
+  btn.disabled = false; btn.textContent = 'Executar varredura';
+}
+
+/* ---------- renderização ---------- */
+const CLS_LABEL = {
+  direta: 'FHSFA · menção direta',
+  recursos: 'Recursos & programas',
+  normativo: 'Normativo · saúde',
+  outros: 'Para triagem'
+};
+const SRC_ORDER = { 'DOU': 1, 'DOM-BH': 2 };
+
+function render() {
+  const root = $('#resultsRoot');
+  const sum = $('#resSummary');
+  $('#secRes').style.display = 'block';
+
+  const counts = { direta: 0, recursos: 0, normativo: 0, outros: 0 };
+  state.items.forEach((it) => { counts[it.cls] = (counts[it.cls] || 0) + 1; });
+
+  const per = state.ranPeriod;
+  sum.innerHTML =
+    (per ? '<span class="pill">Período <b>' + esc(brFromISO(per.from)) + '–' + esc(brFromISO(per.to)) + '</b></span>' : '')
+    + '<span class="pill">Menções diretas <b>' + counts.direta + '</b></span>'
+    + '<span class="pill">Recursos & programas <b>' + counts.recursos + '</b></span>'
+    + '<span class="pill">Normativo saúde <b>' + counts.normativo + '</b></span>'
+    + (counts.outros ? '<span class="pill">Triagem <b>' + counts.outros + '</b></span>' : '');
+
+  if (!state.items.length) {
+    root.innerHTML = '<p class="vazio">Nenhuma ocorrência para os termos e o período consultados. Amplie o intervalo, revise os termos (§4) ou confira as buscas oficiais pelos links do registro acima.</p>';
+    return;
+  }
+
+  const bySrc = {};
+  state.items.forEach((it) => { (bySrc[it.src] = bySrc[it.src] || []).push(it); });
+  const srcs = Object.keys(bySrc).sort((x, y) => (SRC_ORDER[x] || 9) - (SRC_ORDER[y] || 9) || x.localeCompare(y));
+
+  const clsRank = { direta: 0, recursos: 1, normativo: 2, outros: 3 };
+  let html = '';
+  srcs.forEach((src) => {
+    const list = bySrc[src].sort((a, b) =>
+      (clsRank[a.cls] - clsRank[b.cls]) || (tsFromBR(b.date) - tsFromBR(a.date)));
+    html += '<div class="fonteHead">' + esc(src) + ' · ' + list.length + ' item(ns)</div>';
+    list.forEach((it) => {
+      const termos = (it.terms || []).join(', ');
+      html += '<article class="item ' + it.cls + '">'
+        + '<span class="carimbo">' + CLS_LABEL[it.cls] + '</span>'
+        + '<h3>' + esc(it.title) + '</h3>'
+        + '<div class="meta">'
+        + (it.date ? esc(it.date) + ' · ' : '')
+        + (it.section ? esc(it.section) + ' · ' : '')
+        + (it.org ? esc(it.org) + ' · ' : '')
+        + (it.ms ? '<b>MS</b> · ' : '')
+        + 'termos: ' + esc(termos || '—')
+        + '</div>'
+        + (it.snippet ? '<div class="trecho">' + highlight(it.snippet) + '</div>' : '')
+        + '<div class="links">'
+        + (it.link ? '<a href="' + esc(it.link) + '" target="_blank" rel="noopener">Abrir publicação</a>' : '')
+        + (it.txt ? '<a href="' + esc(it.txt) + '" target="_blank" rel="noopener">Texto integral</a>' : '')
+        + (it.official ? '<a href="' + esc(it.official) + '" target="_blank" rel="noopener">Fonte oficial</a>' : '')
+        + '</div>'
+        + '</article>';
+    });
+  });
+  root.innerHTML = html;
+  const anc = $('#secRes');
+  if (anc && typeof anc.scrollIntoView === 'function') {
+    anc.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+/* ---------- relatório ---------- */
+function buildReport() {
+  const per = state.ranPeriod;
+  const now = new Date();
+  const p2 = (n) => String(n).padStart(2, '0');
+  const stamp = p2(now.getDate()) + '/' + p2(now.getMonth() + 1) + '/' + now.getFullYear()
+    + ' ' + p2(now.getHours()) + ':' + p2(now.getMinutes());
+  const L = [];
+  L.push('CLIPPING DE DIÁRIOS OFICIAIS — SAÚDE / FHSFA');
+  L.push('Período monitorado: ' + (per ? (brFromISO(per.from) + ' a ' + brFromISO(per.to)) : '—')
+    + ' · Gerado em ' + stamp);
+  L.push('Fontes: DOU (busca oficial — Imprensa Nacional); DOM-BH (base aberta Querido Diário/OKBR); Minas Gerais (verificação assistida/análise local, quando indicada).');
+  L.push('');
+
+  const groups = [
+    ['direta', '1. MENÇÕES DIRETAS À FUNDAÇÃO'],
+    ['recursos', '2. RECURSOS, REPASSES E PROGRAMAS'],
+    ['normativo', '3. MUDANÇAS NORMATIVAS EM SAÚDE'],
+    ['outros', '4. ITENS PARA TRIAGEM']
+  ];
+  groups.forEach((g) => {
+    const list = state.items.filter((it) => it.cls === g[0])
+      .sort((a, b) => tsFromBR(b.date) - tsFromBR(a.date));
+    L.push(g[1] + ' (' + list.length + ')');
+    if (!list.length) { L.push('   Sem ocorrências no período.'); L.push(''); return; }
+    list.forEach((it, i) => {
+      L.push('   ' + (i + 1) + '. [' + it.src + (it.section ? ' · ' + it.section : '') + (it.date ? ' · ' + it.date : '') + '] ' + it.title);
+      if (it.org) L.push('      Órgão: ' + it.org);
+      if (it.terms && it.terms.length) L.push('      Termos: ' + it.terms.join('; '));
+      if (it.snippet) L.push('      Trecho: "' + it.snippet.slice(0, 450) + (it.snippet.length > 450 ? '…' : '') + '"');
+      if (it.link) L.push('      Link: ' + it.link);
+      L.push('');
+    });
+  });
+  L.push('Nota metodológica: triagem automática por termos, insensível a acentuação; classificação por regras (menção direta > recursos > normativo). Conferir o inteiro teor na publicação oficial antes de qualquer citação ou providência.');
+  return L.join('\n');
+}
+async function copyReport() {
+  const txt = buildReport();
+  try {
+    await navigator.clipboard.writeText(txt);
+    alert('Relatório copiado para a área de transferência.');
+  } catch (e) {
+    const ta = document.createElement('textarea');
+    ta.value = txt; document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); alert('Relatório copiado.'); }
+    catch (e2) { alert('Não foi possível copiar automaticamente — use “Baixar .txt”.'); }
+    ta.remove();
+  }
+}
+function download(name, mime, content) {
+  const blob = new Blob([content], { type: mime });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 400);
+}
+function downloadTxt() {
+  const per = state.ranPeriod;
+  const tag = per ? (per.from + '_' + per.to) : fmtISO(new Date());
+  download('clipping-fhsfa_' + tag + '.txt', 'text/plain;charset=utf-8', buildReport());
+}
+function downloadCsv() {
+  const q = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+  const rows = [['fonte', 'data', 'classificacao', 'titulo', 'orgao', 'secao', 'termos', 'trecho', 'link'].join(';')];
+  state.items.forEach((it) => {
+    rows.push([
+      q(it.src), q(it.date), q(CLS_LABEL[it.cls]), q(it.title), q(it.org),
+      q(it.section), q((it.terms || []).join(' | ')), q(it.snippet), q(it.link)
+    ].join(';'));
+  });
+  const per = state.ranPeriod;
+  const tag = per ? (per.from + '_' + per.to) : fmtISO(new Date());
+  download('clipping-fhsfa_' + tag + '.csv', 'text/csv;charset=utf-8', '\uFEFF' + rows.join('\r\n'));
+}
+
+/* ---------- Minas Gerais: links assistidos ---------- */
+function buildMgLinks() {
+  const cfg = readTermsFromUI();
+  const el = $('#mgLinks');
+  let html = '<a href="https://www.jornalminasgerais.mg.gov.br/" target="_blank" rel="noopener">→ Portal do Diário Oficial «Minas Gerais» (edição do dia e pesquisa)</a>'
+    + '<a href="https://jornal.iof.mg.gov.br/xmlui/" target="_blank" rel="noopener">→ Acervo IOF (edições antigas)</a>';
+  cfg.a.concat(cfg.b).slice(0, 8).forEach((t) => {
+    const gq = encodeURIComponent('site:jornalminasgerais.mg.gov.br "' + t + '"');
+    html += '<a href="https://www.google.com/search?q=' + gq + '" target="_blank" rel="noopener">→ Rastrear no índice do portal: “' + esc(t) + '”</a>';
+  });
+  el.innerHTML = html;
+}
+
+/* ---------- análise local (pdf.js sob demanda) ---------- */
+let pdfjsReady = null;
+function loadPdfjs() {
+  if (window.pdfjsLib) return Promise.resolve();
+  if (pdfjsReady) return pdfjsReady;
+  pdfjsReady = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    s.onload = () => {
+      try {
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+          'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        resolve();
+      } catch (e) { reject(e); }
+    };
+    s.onerror = () => reject(new Error('não foi possível carregar a biblioteca de PDF (cdnjs)'));
+    document.head.appendChild(s);
+  });
+  return pdfjsReady;
+}
+function scanChunk(text, pageNo, bucket) {
+  for (const o of TERMS) {
+    o.rx.lastIndex = 0;
+    let m; let n = 0;
+    while ((m = o.rx.exec(text)) && n < 2) {
+      if (m[0].length === 0) { o.rx.lastIndex++; continue; }
+      const s = Math.max(0, m.index - 220);
+      const e = Math.min(text.length, m.index + m[0].length + 220);
+      bucket.push({
+        page: pageNo,
+        grp: o.grp,
+        term: o.t,
+        excerpt: (s > 0 ? '…' : '') + text.slice(s, e).replace(/\s+/g, ' ').trim() + (e < text.length ? '…' : '')
+      });
+      n++;
+    }
+  }
+}
+function absorbScan(findings, label, dateBR, srcName) {
+  if (!findings.length) return 0;
+  const byPage = new Map();
+  findings.forEach((f) => {
+    const k = f.page == null ? 0 : f.page;
+    if (!byPage.has(k)) byPage.set(k, []);
+    byPage.get(k).push(f);
+  });
+  let added = 0;
+  byPage.forEach((list, page) => {
+    const terms = Array.from(new Set(list.map((f) => f.term)));
+    const excerpts = Array.from(new Set(list.map((f) => f.excerpt))).slice(0, 3);
+    const it = {
+      src: srcName,
+      terms,
+      title: label + (page ? (' — pág. ' + page) : ''),
+      date: dateBR || '',
+      org: 'Imprensa Oficial de Minas Gerais',
+      section: '',
+      snippet: excerpts.join(' ▸ '),
+      link: '',
+      official: 'https://www.jornalminasgerais.mg.gov.br/',
+      txt: ''
+    };
+    const a = analyze(terms.join(' — ') + ' — ' + it.snippet);
+    it.cls = a.cls; it.found = a.found; it.ms = false;
+    state.items.push(it);
+    added++;
+  });
+  return added;
+}
+async function scanFile() {
+  const inp = $('#pdfFile');
+  const st = $('#scanStatus');
+  if (!inp.files || !inp.files.length) { st.textContent = 'Selecione um arquivo PDF ou TXT.'; return; }
+  const file = inp.files[0];
+  compileTerms(readTermsFromUI());
+  const label = ($('#mgLabel').value || file.name).trim();
+  const dateBR = brFromISO($('#mgDate').value);
+  const findings = [];
+  try {
+    if (/\.txt$/i.test(file.name) || file.type === 'text/plain') {
+      st.textContent = 'Lendo texto…';
+      const text = await file.text();
+      scanChunk(text, null, findings);
+    } else {
+      st.textContent = 'Carregando leitor de PDF…';
+      await loadPdfjs();
+      const buf = await file.arrayBuffer();
+      const doc = await window.pdfjsLib.getDocument({ data: buf }).promise;
+      const total = doc.numPages;
+      for (let p = 1; p <= total; p++) {
+        const page = await doc.getPage(p);
+        const tc = await page.getTextContent();
+        const text = tc.items.map((i) => i.str).join(' ');
+        scanChunk(text, p, findings);
+        if (p % 5 === 0 || p === total) st.textContent = 'Analisando página ' + p + ' de ' + total + '…';
+        if (findings.length > 400) { st.textContent = 'Muitas ocorrências — análise interrompida na página ' + p + '.'; break; }
+      }
+    }
+    const added = absorbScan(findings, label, dateBR, 'Minas Gerais (análise local)');
+    st.textContent = added
+      ? ('Concluído: ' + findings.length + ' ocorrência(s) em ' + added + ' bloco(s). Achados incluídos em §2.')
+      : 'Concluído: nenhum termo monitorado encontrado neste arquivo.';
+    if (added) render();
+  } catch (e) {
+    st.textContent = 'Falha na análise: ' + e.message + '. Se o PDF for digitalizado (imagem), o texto não é extraível localmente.';
+  }
+}
+function scanPasted() {
+  const st = $('#scanStatus');
+  const text = $('#pasteText').value.trim();
+  if (text.length < 40) { st.textContent = 'Cole um trecho maior para análise.'; return; }
+  compileTerms(readTermsFromUI());
+  const label = ($('#mgLabel').value || 'Trecho colado').trim();
+  const dateBR = brFromISO($('#mgDate').value);
+  const findings = [];
+  scanChunk(text, null, findings);
+  const added = absorbScan(findings, label + ' — trecho', dateBR, 'Minas Gerais (análise local)');
+  st.textContent = added
+    ? ('Concluído: ' + findings.length + ' ocorrência(s). Achados incluídos em §2.')
+    : 'Nenhum termo monitorado encontrado no trecho.';
+  if (added) render();
+}
+
+/* ---------- diagnóstico de conexões ---------- */
+async function diag() {
+  const box = $('#progress');
+  box.classList.add('on');
+  logLine('Diagnóstico — ambiente: ' + location.protocol + '//' + (location.hostname || '(arquivo local)'));
+  let l = logLine('Querido Diário (acesso direto) — testando…');
+  try {
+    const r = await fetch('https://api.queridodiario.ok.org.br/gazettes?territory_ids=3106200&size=1');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    await r.json();
+    l.className = 'plog ok'; l.textContent = 'Querido Diário (acesso direto) — OK';
+  } catch (e) {
+    l.className = 'plog err'; l.textContent = 'Querido Diário (acesso direto) — falhou: ' + e.message;
+  }
+  const alvo = 'https://www.in.gov.br/robots.txt';
+  for (let i = 0; i < PROXIES.length; i++) {
+    const l2 = logLine('Proxy ' + PROXY_NAMES[i] + ' — testando…');
+    try {
+      const r = await fetch(PROXIES[i](alvo));
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const t = await r.text();
+      if (!t) throw new Error('resposta vazia');
+      l2.className = 'plog ok'; l2.textContent = 'Proxy ' + PROXY_NAMES[i] + ' — OK';
+    } catch (e) {
+      l2.className = 'plog err'; l2.textContent = 'Proxy ' + PROXY_NAMES[i] + ' — falhou: ' + e.message;
+    }
+  }
+  if (RESTRITO) {
+    logLine('Ambiente restrito detectado — as falhas acima são esperadas até o arquivo ser publicado (aviso no topo da página).', 'err');
+  } else {
+    logLine('Se o Querido Diário e ao menos um proxy estão OK, a varredura deve funcionar normalmente.', 'ok');
+  }
+}
+
+/* ---------- inicialização ---------- */
+function setRange(days) {
+  const to = new Date();
+  const from = new Date();
+  from.setDate(to.getDate() - days);
+  $('#dtFrom').value = fmtISO(from);
+  $('#dtTo').value = fmtISO(to);
+}
+function fillTerms(cfg) {
+  $('#taA').value = cfg.a.join('\n');
+  $('#taB').value = cfg.b.join('\n');
+  $('#taC').value = cfg.c.join('\n');
+}
+function init() {
+  const cfg = loadCfg() || DEF;
+  fillTerms({ a: cfg.a || DEF.a, b: cfg.b || DEF.b, c: cfg.c || DEF.c });
+  compileTerms(readTermsFromUI());
+  setRange(7);
+  $('#mgDate').value = fmtISO(new Date());
+  buildMgLinks();
+  const envEl = $('#envNote');
+  let motivo = '';
+  const host = location.hostname || '';
+  if (location.protocol === 'file:') {
+    motivo = 'este arquivo está aberto como página local — nesse modo o iPhone não permite as consultas às fontes (e no app Arquivos os botões nem respondem).';
+  } else if (window.origin === 'null' || /claude|anthropic/i.test(host)) {
+    motivo = 'você está numa visualização embutida, que bloqueia conexões externas.';
+  }
+  if (motivo) {
+    RESTRITO = true;
+    envEl.innerHTML = '<div class="banner"><b>Aviso:</b> ' + motivo
+      + ' Para usar a varredura, publique o arquivo e acesse pelo link — <a href="#pubHelp" id="lnkPub">veja o passo a passo</a>.</div>';
+    const lnk = document.querySelector('#lnkPub');
+    if (lnk) lnk.addEventListener('click', () => { $('#pubHelp').open = true; });
+  } else {
+    envEl.innerHTML = '';
+  }
+  if (!storageOk) $('#termsNote').textContent = 'Atenção: este ambiente não permite gravação local — os termos valem só para esta sessão.';
+
+  document.querySelectorAll('.chip').forEach((ch) => {
+    ch.addEventListener('click', () => setRange(parseInt(ch.dataset.range, 10) || 0));
+  });
+  $('#btnRun').addEventListener('click', run);
+  $('#btnDiag').addEventListener('click', diag);
+  $('#btnReport').addEventListener('click', copyReport);
+  $('#btnTxt').addEventListener('click', downloadTxt);
+  $('#btnCsv').addEventListener('click', downloadCsv);
+  $('#btnClear').addEventListener('click', () => {
+    state.items = []; state.ranPeriod = null;
+    $('#secRes').style.display = 'none';
+    $('#progress').classList.remove('on');
+    $('#progress').innerHTML = '';
+  });
+  $('#btnSaveTerms').addEventListener('click', () => {
+    const c = readTermsFromUI();
+    saveCfg(c); compileTerms(c); buildMgLinks();
+    $('#termsNote').textContent = storageOk
+      ? 'Termos salvos neste navegador.'
+      : 'Termos aplicados nesta sessão (ambiente sem gravação local).';
+  });
+  $('#btnResetTerms').addEventListener('click', () => {
+    fillTerms(DEF); saveCfg(DEF); compileTerms(DEF); buildMgLinks();
+    $('#termsNote').textContent = 'Termos padrão restaurados.';
+  });
+  $('#btnScanFile').addEventListener('click', scanFile);
+  $('#btnScanText').addEventListener('click', scanPasted);
+}
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
