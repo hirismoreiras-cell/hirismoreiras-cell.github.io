@@ -286,12 +286,12 @@ footer .selof{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-t
 <section id="secIA">
   <div class="secHead"><span class="num">§5</span><h2>Leitura por IA (opcional)</h2></div>
   <div class="card">
-    <p class="hint">Com uma chave de API, cada achado passa por um modelo de linguagem que lê o teor publicado e devolve nota de impacto (0–10), eixo, justificativa e providência sugerida — considerando o perfil da Fundação. É o que as regras fixas não fazem: avaliar um ato inédito. A leitura da IA é apoio à triagem, não parecer.</p>
+    <p class="hint">Com uma chave de API, cada achado passa por um modelo de linguagem que lê o teor publicado e devolve nota de impacto (0–10), eixo, justificativa e providência sugerida — considerando o perfil da Fundação. É o que as regras fixas não fazem: avaliar um ato inédito. Vem configurado para o <b>Gemini</b>, que tem camada gratuita sem cartão. A leitura da IA é apoio à triagem, não parecer.</p>
     <div class="grid2" style="margin-top:10px">
       <div><label class="fld" for="iaProv">Provedor</label>
         <select id="iaProv">
-          <option value="anthropic">Anthropic (Claude)</option>
-          <option value="gemini">Google (Gemini)</option>
+          <option value="gemini" selected>Google (Gemini) — gratuito</option>
+          <option value="anthropic">Anthropic (Claude) — pago por uso</option>
         </select></div>
       <div><label class="fld" for="iaModelo">Modelo</label><input type="text" id="iaModelo"></div>
     </div>
@@ -300,6 +300,18 @@ footer .selof{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-t
       <input type="password" id="iaKey" autocomplete="off" placeholder="cole aqui a sua chave">
     </div>
     <p class="hint" id="iaNota" style="margin-top:8px"></p>
+    <details style="margin-top:10px">
+      <summary>Obter a chave gratuita do Gemini (1 minuto, no próprio celular)</summary>
+      <div class="dbody">
+        <p class="hint" style="margin-top:10px">1. Abra <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> e entre com a sua conta Google.<br>
+        2. Toque em <b>Create API key</b> (ou «Criar chave de API») e aceite os termos.<br>
+        3. Escolha um projeto — se não houver nenhum, o próprio site cria um.<br>
+        4. Toque no ícone de <b>copiar</b> ao lado da chave gerada.<br>
+        5. Volte aqui, cole no campo acima e toque em <b>Salvar chave neste aparelho</b> — o teste roda sozinho.</p>
+        <p class="hint" style="margin-top:8px">A camada gratuita não pede cartão de crédito. Se um dia aparecer aviso de limite, a ferramenta aguarda e repete automaticamente.</p>
+      </div>
+    </details>
+    <label class="opt" style="margin-top:12px"><input type="checkbox" id="iaAuto" checked><span>Analisar automaticamente ao fim de cada varredura<small>Vale quando houver chave salva; caso contrário, use o botão «Analisar com IA» em §2.</small></span></label>
     <div class="btnrow">
       <button class="btn sec" id="btnIAsave">Salvar chave neste aparelho</button>
       <button class="btn mini" id="btnIAtest">Testar chave</button>
@@ -772,6 +784,11 @@ async function run() {
   render();
   state.running = false;
   btn.disabled = false; btn.textContent = 'Executar varredura';
+
+  const auto = $('#iaAuto');
+  if (auto && auto.checked && $('#iaKey').value.trim() && state.items.length) {
+    await analisarIA();
+  }
 }
 
 /* ---------- renderização ---------- */
@@ -1225,19 +1242,22 @@ document.addEventListener('DOMContentLoaded', init);
 
 const KKEY = 'sentinela_ia_v1';
 const PROVIDERS = {
-  anthropic: {
-    nome: 'Anthropic (Claude)',
-    modelo: 'claude-haiku-4-5-20251001',
-    console: 'https://console.anthropic.com/settings/keys',
-    nota: 'Pago por uso. Haiku 4.5 custa US$ 1 por milhão de tokens de entrada — uma varredura típica sai por centavos. Defina um limite de gasto no console.'
-  },
   gemini: {
     nome: 'Google (Gemini)',
     modelo: 'gemini-2.5-flash',
     console: 'https://aistudio.google.com/apikey',
-    nota: 'Possui camada gratuita com limite de requisições por minuto/dia — suficiente para varreduras diárias. Se aparecer erro 429, aguarde um minuto e repita.'
+    lote: 8, pausa: 6500,
+    nota: 'Camada gratuita, sem cartão: cerca de 10 consultas por minuto e algumas centenas por dia — folgado para varreduras diárias. A ferramenta já respeita esse ritmo.'
+  },
+  anthropic: {
+    nome: 'Anthropic (Claude)',
+    modelo: 'claude-haiku-4-5-20251001',
+    console: 'https://console.anthropic.com/settings/keys',
+    lote: 6, pausa: 700,
+    nota: 'Pago por uso. Haiku 4.5 custa US$ 1 por milhão de tokens de entrada — uma varredura típica sai por centavos. Convém definir limite de gasto no console.'
   }
 };
+const PROV_PADRAO = 'gemini';
 
 const PERFIL = [
   'PERFIL DA INSTITUIÇÃO MONITORADA',
@@ -1376,7 +1396,9 @@ async function analisarIA() {
   box.classList.add('on');
   logLine('IA · ' + PROVIDERS[cfg.prov].nome + ' (' + esc(cfg.modelo) + ') — ' + alvo.length + ' ato(s) em análise…');
 
-  const TAM = 6;
+  const perfilProv = PROVIDERS[cfg.prov] || PROVIDERS[PROV_PADRAO];
+  const TAM = perfilProv.lote || 6;
+  const PAUSA = perfilProv.pausa || 700;
   let ok = 0; let falhas = 0;
   for (let p = 0; p < alvo.length; p += TAM) {
     const lote = alvo.slice(p, p + TAM);
@@ -1384,7 +1406,17 @@ async function analisarIA() {
     const total = Math.ceil(alvo.length / TAM);
     const linha = logLine('IA · lote ' + nLote + '/' + total + ' — enviando…');
     try {
-      const resposta = await chamarIA(cfg, montarLote(lote));
+      let resposta;
+      try {
+        resposta = await chamarIA(cfg, montarLote(lote));
+      } catch (e1) {
+        if (/limite de uso/.test(e1.message)) {
+          linha.className = 'plog';
+          linha.textContent = 'IA · lote ' + nLote + '/' + total + ' — limite atingido, aguardando 20s…';
+          await sleep(20000);
+          resposta = await chamarIA(cfg, montarLote(lote));
+        } else { throw e1; }
+      }
       const arr = parseJsonArray(resposta);
       arr.forEach((r) => {
         const idx = (parseInt(r.id, 10) || 0) - 1;
@@ -1406,7 +1438,7 @@ async function analisarIA() {
       linha.textContent = 'IA · lote ' + nLote + '/' + total + ' — falha: ' + e.message;
       if (/chave recusada/.test(e.message)) break;
     }
-    await sleep(700);
+    if (p + TAM < alvo.length) await sleep(PAUSA);
   }
   logLine('IA · concluída: ' + ok + ' ato(s) avaliado(s)' + (falhas ? ', ' + falhas + ' lote(s) com falha' : '') + '.',
     ok ? 'ok' : 'err');
@@ -1434,8 +1466,9 @@ async function testarChave() {
 function initIA() {
   const sel = $('#iaProv');
   const salvo = loadKeyCfg();
+  sel.value = PROV_PADRAO;
   if (salvo) {
-    sel.value = salvo.prov || 'anthropic';
+    sel.value = salvo.prov || PROV_PADRAO;
     $('#iaModelo').value = salvo.modelo || PROVIDERS[sel.value].modelo;
     if (salvo.chave) {
       $('#iaKey').value = salvo.chave;
@@ -1454,9 +1487,16 @@ function initIA() {
     $('#iaModelo').value = PROVIDERS[sel.value].modelo;
     pintarNota();
   });
-  $('#btnIAsave').addEventListener('click', () => {
+  $('#btnIAsave').addEventListener('click', async () => {
     saveKeyCfg(iaCfgAtual());
-    $('#iaStatus').textContent = 'Chave gravada apenas neste aparelho.';
+    $('#iaStatus').textContent = 'Chave gravada neste aparelho — testando…';
+    await testarChave();
+  });
+  $('#iaKey').addEventListener('change', () => {
+    if ($('#iaKey').value.trim()) {
+      saveKeyCfg(iaCfgAtual());
+      $('#iaStatus').textContent = 'Chave gravada neste aparelho. Toque em «Testar chave» para conferir.';
+    }
   });
   $('#btnIAtest').addEventListener('click', testarChave);
   $('#btnIAclear').addEventListener('click', () => {
