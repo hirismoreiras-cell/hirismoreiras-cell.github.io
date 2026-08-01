@@ -287,6 +287,11 @@ footer .selof{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-t
   <div class="card">
     <p class="hint">A varredura de §1 já traz automaticamente a <b>legislação estadual</b> pela API de dados abertos da ALMG. O que ela não cobre são os atos administrativos da saúde — <b>Resoluções SES/MG</b>, <b>Deliberações CIB-SUS/MG</b> e o caderno do Diário Oficial «Minas Gerais». Esses portais declaram, em seus próprios arquivos de robôs, que não autorizam acesso automatizado; por isso a ferramenta não os varre sozinha. O caminho abaixo mantém a agilidade sem passar por cima dessa regra.</p>
     <div class="mgLinks" id="mgLinks"></div>
+    <div class="mgLinks" style="margin-top:6px">
+      <a href="https://portal-antigo.saude.mg.gov.br/resolucoes" target="_blank" rel="noopener">→ Resoluções SES/MG (portal da Secretaria)</a>
+      <a href="https://portal-antigo.saude.mg.gov.br/deliberacoes" target="_blank" rel="noopener">→ Deliberações CIB-SUS/MG</a>
+      <a href="https://www.saude.mg.gov.br/cib/" target="_blank" rel="noopener">→ Pautas e reuniões da CIB</a>
+    </div>
     <div class="btnrow">
       <button class="btn mini" id="btnMgDatas">Gerar links das edições do período</button>
     </div>
@@ -442,16 +447,38 @@ footer .selof{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-t
 
 <!-- ============ 7. EQUIPE ============ -->
 <section id="secEquipe">
-  <div class="secHead"><span class="num">§7</span><h2>Uso pela equipe e no computador</h2></div>
-  <details>
-    <summary>Como distribuir para a equipe</summary>
+  <div class="secHead"><span class="num">§7</span><h2>Equipe</h2></div>
+  <div class="card">
+    <p class="hint"><b>Como liberar seu Gemini pago para a colaboradora.</b> Não é preciso — e não convém — repassar a sua chave pessoal. No mesmo projeto pago, gere uma <b>segunda chave</b>: as duas consomem o mesmo plano, mas você revoga a dela sem afetar a sua, e sabe qual chave gerou cada consumo.</p>
+    <p class="hint" style="margin-top:8px">1. Abra <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> com a sua conta.<br>
+    2. Toque em <b>Create API key</b> e escolha <b>o mesmo projeto</b> da sua chave atual — é isso que mantém o plano pago.<br>
+    3. Nomeie de forma identificável (ex.: «Sentinela — colaboradora»).<br>
+    4. Envie a chave por canal privado; ela cola em §5 e marca «Conta paga».</p>
+    <p class="hint" style="margin-top:8px">Para conferir consumo ou revogar depois: as chaves aparecem na mesma tela do AI Studio e no painel do Google Cloud, em APIs e Serviços → Credenciais.</p>
+  </div>
+
+  <div class="card" style="margin-top:12px">
+    <p class="hint"><b>Transferir a configuração.</b> Em vez de a colaboradora refazer os termos, confirmadores e dados do boletim à mão, gere um código aqui e peça que ela cole no aparelho dela.</p>
+    <label class="opt" style="margin-top:10px"><input type="checkbox" id="cfgComChave"><span>Incluir a chave de API no código<small>Só marque se for enviar por canal privado. O código passa a valer como senha.</small></span></label>
+    <div class="btnrow">
+      <button class="btn sec" id="btnCfgGerar">Gerar código</button>
+      <button class="btn mini" id="btnCfgCopiar">Copiar</button>
+    </div>
+    <textarea id="cfgSaida" rows="3" placeholder="O código aparece aqui." style="margin-top:8px"></textarea>
+    <label class="fld" for="cfgEntrada" style="margin-top:12px">Recebeu um código? Cole abaixo</label>
+    <textarea id="cfgEntrada" rows="3" placeholder="Cole aqui o código enviado pela coordenação."></textarea>
+    <div class="btnrow">
+      <button class="btn sec" id="btnCfgAplicar">Aplicar configuração</button>
+    </div>
+    <p class="hint" id="cfgStatus" style="margin-top:8px"></p>
+  </div>
+
+  <details style="margin-top:12px">
+    <summary>Uso no computador e rotina sugerida</summary>
     <div class="dbody">
-      <p class="hint" style="margin-top:10px"><b>Computador.</b> É o mesmo endereço: <span style="font-family:var(--mono)">hirismoreiras-cell.github.io</span>, em qualquer navegador (Chrome, Edge, Safari, Firefox), sem instalação. O layout se ajusta a telas grandes e o boletim abre em aba própria para impressão.</p>
-      <p class="hint" style="margin-top:8px"><b>Chave de API — ponto de atenção.</b> A chave fica gravada no aparelho de cada pessoa, não no site. Portanto cada membro da equipe precisa colar uma chave em §5 no próprio computador. Duas opções:</p>
-      <p class="hint" style="margin-top:6px">• <b>Chave individual</b> (recomendado): cada um gera a sua no AI Studio. Se alguém sair da equipe, basta revogar aquela chave, sem afetar os demais.<br>
-      • <b>Chave institucional única</b>: prática, mas todos passam a compartilhar a mesma cota e a mesma exposição — se a chave vazar, é preciso trocá-la em todos os aparelhos. Se optar por ela, crie uma chave dedicada a este uso, com limite de gasto definido, e nunca a envie por canal aberto.</p>
-      <p class="hint" style="margin-top:8px"><b>Fluxo sugerido.</b> Um analista roda a varredura semanal e gera o boletim; a coordenação revisa a redação; a versão por setor é distribuída em PDF. Assim a IA acelera a triagem sem que a interpretação chegue ao destinatário sem revisão humana.</p>
-      <p class="hint" style="margin-top:8px"><b>Padronização.</b> Termos, confirmadores e exclusões de §4 ficam gravados por aparelho. Para que todos usem os mesmos critérios, defina a configuração em um computador e peça que a equipe reproduza os campos de §4 — ou solicite que os padrões sejam fixados no código.</p>
+      <p class="hint" style="margin-top:10px"><b>Computador.</b> Mesmo endereço, qualquer navegador, sem instalação. O layout se ajusta a telas grandes e o boletim abre em aba própria para impressão.</p>
+      <p class="hint" style="margin-top:8px"><b>Rotina.</b> A colaboradora roda a varredura semanal e gera o boletim; a coordenação revisa a redação antes de distribuir. A revisão humana é o que mantém o documento defensável, já que a interpretação vem de IA.</p>
+      <p class="hint" style="margin-top:8px"><b>Fontes automáticas:</b> DOU, DOM-BH e legislação estadual de MG (ALMG). <b>Fontes de conferência manual:</b> Resoluções SES/MG e Deliberações CIB, no portal da Secretaria — os atalhos estão em §3.</p>
     </div>
   </details>
 </section>
@@ -1494,6 +1521,7 @@ function init() {
   });
   initIA();
   initBoletim();
+  initCfgEquipe();
   $('#btnBoletim').addEventListener('click', gerarBoletim);
   $('#btnScanFile').addEventListener('click', scanFile);
   $('#btnMgDatas').addEventListener('click', linksEdicoesMG);
@@ -2464,6 +2492,120 @@ function initBoletim() {
   $('#bolEdicao').value = String(now.getMonth() + 1).padStart(2, '0') + '/' + now.getFullYear();
   $('#btnBolAbrir').addEventListener('click', () => gerarBoletim(false));
   $('#btnBolBaixar').addEventListener('click', () => gerarBoletim(true));
+}
+
+/* ============================================================
+   CONFIGURAÇÃO DA EQUIPE — exportar/importar ajustes
+   Permite replicar termos, regras e provedor em outro aparelho
+   sem refazer tudo à mão. A chave só viaja se marcado.
+   ============================================================ */
+
+function b64enc(str) {
+  let bin;
+  if (typeof TextEncoder !== 'undefined') {
+    const bytes = new TextEncoder().encode(str);
+    bin = '';
+    for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  } else {
+    bin = unescape(encodeURIComponent(str));
+  }
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function b64dec(s) {
+  let t = String(s).replace(/-/g, '+').replace(/_/g, '/');
+  while (t.length % 4) t += '=';
+  const bin = atob(t);
+  if (typeof TextDecoder !== 'undefined') {
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new TextDecoder().decode(bytes);
+  }
+  return decodeURIComponent(escape(bin));
+}
+
+function montarPacote(comChave) {
+  const t = readTermsFromUI();
+  const ia = iaCfgAtual();
+  const pac = {
+    v: 1,
+    termos: t,
+    ia: { prov: ia.prov, modelo: ia.modelo, pago: ia.pago },
+    bol: {
+      inst: $('#bolInst').value, unidade: $('#bolUnidade').value,
+      a1: $('#bolA1').value, a1c: $('#bolA1c').value,
+      a2: $('#bolA2').value, a2c: $('#bolA2c').value
+    }
+  };
+  if (comChave && ia.chave) pac.k = ia.chave;
+  return b64enc(JSON.stringify(pac));
+}
+
+function aplicarPacote(codigo) {
+  let pac;
+  try { pac = JSON.parse(b64dec(codigo.trim())); }
+  catch (e) { throw new Error('código inválido ou incompleto'); }
+  if (!pac || pac.v !== 1) throw new Error('código de versão desconhecida');
+  if (pac.termos) {
+    fillTerms({
+      a: pac.termos.a || DEF.a, b: pac.termos.b || DEF.b,
+      t: pac.termos.t || DEF.t, x: pac.termos.x || DEF.x,
+      conf: pac.termos.conf || DEF.conf, hom: pac.termos.hom || DEF.hom
+    });
+    const c = readTermsFromUI();
+    saveCfg(c); compileAll(c); buildMgLinks();
+  }
+  if (pac.ia) {
+    if (pac.ia.prov) $('#iaProv').value = pac.ia.prov;
+    if (pac.ia.modelo) $('#iaModelo').value = pac.ia.modelo;
+    $('#iaPago').checked = !!pac.ia.pago;
+  }
+  let comChave = false;
+  if (pac.k) { $('#iaKey').value = pac.k; comChave = true; }
+  if (pac.ia || pac.k) saveKeyCfg(iaCfgAtual());
+  if (pac.bol) {
+    const set = (id, v) => { if (v != null && $(id)) $(id).value = v; };
+    set('#bolInst', pac.bol.inst); set('#bolUnidade', pac.bol.unidade);
+    set('#bolA1', pac.bol.a1); set('#bolA1c', pac.bol.a1c);
+    set('#bolA2', pac.bol.a2); set('#bolA2c', pac.bol.a2c);
+  }
+  return comChave;
+}
+
+function initCfgEquipe() {
+  const saida = $('#cfgSaida');
+  const st = $('#cfgStatus');
+
+  $('#btnCfgGerar').addEventListener('click', () => {
+    const comChave = $('#cfgComChave').checked;
+    saida.value = montarPacote(comChave);
+    st.textContent = comChave
+      ? 'Código gerado COM a chave de API — trate-o como senha: envie por canal privado e não o publique.'
+      : 'Código gerado sem a chave. Cada pessoa deve colar a própria chave em §5.';
+  });
+
+  $('#btnCfgCopiar').addEventListener('click', async () => {
+    if (!saida.value) { st.textContent = 'Gere o código primeiro.'; return; }
+    try {
+      await navigator.clipboard.writeText(saida.value);
+      st.textContent = 'Código copiado.';
+    } catch (e) {
+      saida.select();
+      st.textContent = 'Selecione o texto e copie manualmente.';
+    }
+  });
+
+  $('#btnCfgAplicar').addEventListener('click', () => {
+    const codigo = $('#cfgEntrada').value;
+    if (!codigo.trim()) { st.textContent = 'Cole o código recebido.'; return; }
+    try {
+      const comChave = aplicarPacote(codigo);
+      st.textContent = 'Configuração aplicada neste aparelho'
+        + (comChave ? ', incluindo a chave de API. Toque em «Testar chave» em §5 para conferir.'
+                    : '. Falta apenas colar a chave de API em §5.');
+    } catch (e) {
+      st.textContent = 'Falhou: ' + e.message;
+    }
+  });
 }
 </script>
 </body>
