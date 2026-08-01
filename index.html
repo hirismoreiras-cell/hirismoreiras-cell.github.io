@@ -213,6 +213,7 @@ footer .selof{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-t
     <div class="opts">
       <label class="opt"><input type="checkbox" id="srcDou" checked><span><b>União — DOU</b> (busca oficial da Imprensa Nacional)<small>Consulta os termos dos grupos A e B na busca do in.gov.br.</small></span></label>
       <label class="opt"><input type="checkbox" id="srcQd" checked><span><b>Belo Horizonte — DOM</b> (via base aberta Querido Diário / OKBR)<small>Busca no texto integral do Diário Oficial do Município. A base pode ter defasagem de alguns dias.</small></span></label>
+      <label class="opt"><input type="checkbox" id="srcMg" checked><span><b>Minas Gerais — legislação estadual</b> (dados abertos da ALMG)<small>Leis e decretos estaduais publicados no período, por assunto. Não cobre resoluções SES/MG nem deliberações CIB — para essas, veja §3.</small></span></label>
       <label class="opt"><input type="checkbox" id="useT" checked><span>Incluir consultas temáticas de legislação<small>Frases exatas de alta precisão (filantropia, MAC, incentivos, FMS-BH) — editáveis em §4.</small></span></label>
       <label class="opt"><input type="checkbox" id="modoAP" checked><span>Modo alta precisão<small>Exibe só menção direta e atos com gatilho de impacto; o restante fica na dobra «Filtrados», revisável e presente no CSV.</small></span></label>
       <label class="opt"><input type="checkbox" id="priorMS" checked><span>Sinalizar atos do Ministério da Saúde no DOU</span></label>
@@ -282,26 +283,31 @@ footer .selof{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-t
 
 <!-- ============ 3. MINAS GERAIS ============ -->
 <section id="secMg">
-  <div class="secHead"><span class="num">§3</span><h2>Minas Gerais — verificação assistida</h2></div>
+  <div class="secHead"><span class="num">§3</span><h2>Minas Gerais — complemento</h2></div>
   <div class="card">
-    <p class="hint">O Diário Oficial «Minas Gerais» (IOF) não oferece API pública de busca; o portal do Estado também costuma bloquear consultas automatizadas. Por isso este módulo funciona em dois passos: abra a edição pelos atalhos abaixo e, se quiser a triagem automática, traga o PDF (ou o texto) para análise <b>local, no seu aparelho</b> — nada é enviado a servidor algum.</p>
+    <p class="hint">A varredura de §1 já traz automaticamente a <b>legislação estadual</b> pela API de dados abertos da ALMG. O que ela não cobre são os atos administrativos da saúde — <b>Resoluções SES/MG</b>, <b>Deliberações CIB-SUS/MG</b> e o caderno do Diário Oficial «Minas Gerais». Esses portais declaram, em seus próprios arquivos de robôs, que não autorizam acesso automatizado; por isso a ferramenta não os varre sozinha. O caminho abaixo mantém a agilidade sem passar por cima dessa regra.</p>
     <div class="mgLinks" id="mgLinks"></div>
-    <div class="dz">
-      <label class="fld" for="pdfFile">Analisar edição localmente (PDF ou TXT)</label>
-      <input type="file" id="pdfFile" accept=".pdf,.txt,application/pdf,text/plain">
+    <div class="btnrow">
+      <button class="btn mini" id="btnMgDatas">Gerar links das edições do período</button>
+    </div>
+    <div class="mgLinks" id="mgDatas" style="margin-top:8px"></div>
+    <div class="dz" id="dzMg">
+      <label class="fld" for="pdfFile">Analisar edições no seu aparelho — vários arquivos de uma vez</label>
+      <input type="file" id="pdfFile" accept=".pdf,.txt,application/pdf,text/plain" multiple>
+      <p class="hint" style="margin-top:6px">No computador, você também pode arrastar os PDFs para dentro desta área. A data é lida do nome do arquivo quando possível (ex.: <span style="font-family:var(--mono)">caderno1_2026-08-01.pdf</span>).</p>
       <div class="grid2" style="margin-top:8px">
-        <div><label class="fld" for="mgDate">Data da edição</label><input type="date" id="mgDate"></div>
+        <div><label class="fld" for="mgDate">Data (se o nome não indicar)</label><input type="date" id="mgDate"></div>
         <div><label class="fld" for="mgLabel">Identificação</label><input type="text" id="mgLabel" value="Minas Gerais — Caderno 1"></div>
       </div>
       <label class="fld" for="pasteText" style="margin-top:10px">…ou cole aqui um trecho / texto da edição</label>
       <textarea id="pasteText" placeholder="Cole o texto copiado do diário para triagem pelos mesmos termos."></textarea>
       <div class="btnrow">
-        <button class="btn sec" id="btnScanFile">Analisar arquivo</button>
+        <button class="btn sec" id="btnScanFile">Analisar arquivos</button>
         <button class="btn mini" id="btnScanText">Analisar texto colado</button>
       </div>
       <div id="scanStatus" class="hint" style="margin-top:8px"></div>
     </div>
-    <p class="hint" style="margin-top:10px">Os achados de MG entram nas mesmas categorias e no mesmo relatório da varredura automática. O analisador local também serve para qualquer PDF de diário (DOU, DOM-BH, cadernos avulsos).</p>
+    <p class="hint" style="margin-top:10px"><b>Rotina sugerida (2 minutos por semana):</b> gere os links acima, baixe as edições do período, arraste todas de uma vez para esta área. Os achados entram nas mesmas categorias e no mesmo boletim de §6.</p>
   </div>
 </section>
 
@@ -451,7 +457,7 @@ footer .selof{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-t
 </section>
 
 <footer>
-  <p><b>Método.</b> União: consulta à busca oficial da Imprensa Nacional (in.gov.br), termo a termo, no período indicado; quando o navegador exige, a leitura passa por um proxy público de CORS (AllOrigins, CodeTabs ou corsproxy), sem armazenamento próprio. Belo Horizonte: API pública do projeto Querido Diário (Open Knowledge Brasil), que indexa o texto integral do DOM. Minas Gerais: verificação assistida com análise local do PDF/texto da edição. A identificação da instituição exige confirmação por CNPJ 31.025.354/0001-32, CNES 26840 ou vínculo com Belo Horizonte/Minas Gerais; menções ao nome sem esses elementos são separadas como possível homônimo. A triagem aplica, além dos termos, regras de impacto do perfil institucional (filantropia/CEBAS, contratualização e financiamento SUS, programas ativos, repasses BH/MG, CNES); o que não aciona regra vai para a dobra «Filtrados» e para o CSV — nada é descartado silenciosamente.</p>
+  <p><b>Método.</b> União: consulta à busca oficial da Imprensa Nacional (in.gov.br), termo a termo, no período indicado; quando o navegador exige, a leitura passa por um proxy público de CORS (AllOrigins, CodeTabs ou corsproxy), sem armazenamento próprio. Belo Horizonte: API pública do projeto Querido Diário (Open Knowledge Brasil), que indexa o texto integral do DOM. Minas Gerais: legislação estadual pela API de dados abertos da Assembleia Legislativa (ALMG), publicada pelo órgão para reuso em aplicações; os atos administrativos de saúde (Resoluções SES/MG, Deliberações CIB) e o caderno do Diário Oficial estadual não são varridos automaticamente porque os respectivos portais não autorizam acesso automatizado — para eles, a ferramenta oferece análise local dos arquivos que o usuário obtém por conta própria. A identificação da instituição exige confirmação por CNPJ 31.025.354/0001-32, CNES 26840 ou vínculo com Belo Horizonte/Minas Gerais; menções ao nome sem esses elementos são separadas como possível homônimo. A triagem aplica, além dos termos, regras de impacto do perfil institucional (filantropia/CEBAS, contratualização e financiamento SUS, programas ativos, repasses BH/MG, CNES); o que não aciona regra vai para a dobra «Filtrados» e para o CSV — nada é descartado silenciosamente.</p>
   <p><b>Limitações.</b> Ferramenta de triagem — não substitui a leitura da publicação oficial nem constitui parecer. Bases de terceiros podem ter defasagem ou indisponibilidade; a busca do DOU retorna até 50 itens por termo/período (refine as datas se necessário).</p>
   <p><b>Privacidade.</b> Página estática, sem servidor próprio e sem coleta de dados. As conexões são às fontes públicas citadas, à biblioteca pdf.js (cdnjs) quando se analisa um PDF e, apenas se a leitura por IA for acionada, ao provedor escolhido em §5. Sem a chave de API, a ferramenta funciona integralmente por termos e regras, sem qualquer IA.</p>
   <div class="selof">— Sentinela · edição estática · verifique sempre o original —</div>
@@ -853,6 +859,55 @@ async function searchQD(term, fromISO, toISO) {
   return out;
 }
 
+/* ---------- fonte: Minas Gerais — legislação estadual (ALMG dados abertos) ---------- */
+function almgUrl(termo, fromISO, toISO, pagina) {
+  const d = (iso) => String(iso).replace(/-/g, '');
+  return 'https://dadosabertos.almg.gov.br/api/v2/legislacao/mineira/pesquisa/direcionada'
+    + '?tp=20&p=' + (pagina || 1)
+    + '&ini=' + d(fromISO) + '&fim=' + d(toISO)
+    + '&ass=' + encodeURIComponent(termo)
+    + '&ord=0&formato=json';
+}
+function almgLink(it) {
+  const tipo = String(it.tipo || '').toUpperCase();
+  const num = String(it.numero || '');
+  const ano = String(it.ano || '');
+  if (!tipo || !num || !ano) return 'https://www.almg.gov.br/atividade-parlamentar/leis/legislacao-mineira/';
+  return 'https://www.almg.gov.br/legislacao-mineira/' + encodeURIComponent(tipo)
+    + '/' + encodeURIComponent(num) + '/' + encodeURIComponent(ano) + '/';
+}
+function almgData(d) {
+  const s = String(d || '');
+  return /^\d{8}$/.test(s) ? (s.slice(6, 8) + '/' + s.slice(4, 6) + '/' + s.slice(0, 4)) : '';
+}
+async function searchALMG(termo, fromISO, toISO) {
+  const url = almgUrl(termo, fromISO, toISO, 1);
+  const txt = await fetchText(url);
+  let data;
+  try { data = JSON.parse(txt); }
+  catch (e) { throw new Error('resposta inesperada da ALMG'); }
+  const r = (data && data.resultado) || {};
+  if (r.erro === true) throw new Error('a ALMG recusou a consulta');
+  const lista = r.listaItem || [];
+  const arr = Array.isArray(lista) ? lista : [lista];
+  return arr.filter(Boolean).map((it) => {
+    const ementa = stripTags(it.ementa || it.assunto || '');
+    const indexacao = stripTags(it.indexacao || '');
+    return {
+      src: 'MG · ALMG',
+      qterms: [termo],
+      title: stripTags(it.norma || ((it.tipo || '') + ' ' + (it.numero || '') + '/' + (it.ano || ''))),
+      date: almgData(it.data),
+      org: 'Legislação estadual de Minas Gerais',
+      section: stripTags(it.origem || ''),
+      snippet: (ementa + (indexacao ? ' — ' + indexacao : '')).slice(0, 900),
+      link: almgLink(it),
+      official: 'https://www.almg.gov.br/atividade-parlamentar/leis/legislacao-mineira/',
+      txt: ''
+    };
+  });
+}
+
 /* ---------- progresso ---------- */
 function logLine(html, cls) {
   const box = $('#progress');
@@ -877,8 +932,9 @@ async function run() {
 
   const useDou = $('#srcDou').checked;
   const useQd = $('#srcQd').checked;
+  const useMg = $('#srcMg').checked;
   const useT = $('#useT').checked;
-  if (!useDou && !useQd) { alert('Selecione ao menos uma fonte automática (DOU ou DOM-BH).'); return; }
+  if (!useDou && !useQd && !useMg) { alert('Selecione ao menos uma fonte automática.'); return; }
 
   const nominais = cfg.a.concat(cfg.b).filter((t) => t.length >= 4);
   const tematicos = useT ? cfg.t.filter((t) => t.length >= 4) : [];
@@ -920,6 +976,7 @@ async function run() {
       try {
         let items;
         if (fonte === 'DOU') items = await searchDOU(term, from, to, sec);
+        else if (fonte === 'MG · ALMG') items = await searchALMG(term, from, to);
         else items = await searchQD(term, from, to);
         absorb(items);
         okCalls++;
@@ -947,6 +1004,10 @@ async function run() {
   if (useQd) {
     await rodada('DOM-BH', nominais, 'nominal');
     await rodada('DOM-BH', tematicos, 'temático');
+  }
+  if (useMg) {
+    const assuntosMg = (tematicos.length ? tematicos.slice(0, 5) : []).concat(['saúde', 'hospital', 'entidade filantrópica']);
+    await rodada('MG · ALMG', Array.from(new Set(assuntosMg)), 'assunto');
   }
 
   if (errCalls > 0 && okCalls === 0) {
@@ -1255,41 +1316,81 @@ function absorbLocal(text, pageNo, label, dateBR) {
   state.items.push(it);
   return 1;
 }
+function dataDoNome(nome) {
+  let m = String(nome).match(/(20\d{2})[-_.]?(\d{2})[-_.]?(\d{2})/);
+  if (m) return m[3] + '/' + m[2] + '/' + m[1];
+  m = String(nome).match(/(\d{2})[-_.](\d{2})[-_.](20\d{2})/);
+  if (m) return m[1] + '/' + m[2] + '/' + m[3];
+  return '';
+}
+async function analisarUm(file, st, idx, tot) {
+  const dataArq = dataDoNome(file.name) || brFromISO($('#mgDate').value);
+  const base = ($('#mgLabel').value || 'Minas Gerais').trim();
+  const label = base + (dataArq ? ' — ' + dataArq : '') + ' (' + file.name + ')';
+  let added = 0;
+  if (/\.txt$/i.test(file.name) || file.type === 'text/plain') {
+    const text = await file.text();
+    added += absorbLocal(text, null, label, dataArq);
+    return added;
+  }
+  await loadPdfjs();
+  const buf = await file.arrayBuffer();
+  const doc = await window.pdfjsLib.getDocument({ data: buf }).promise;
+  const total = doc.numPages;
+  for (let p = 1; p <= total; p++) {
+    const page = await doc.getPage(p);
+    const tc = await page.getTextContent();
+    const text = tc.items.map((i) => i.str).join(' ');
+    added += absorbLocal(text, p, label, dataArq);
+    if (p % 10 === 0 || p === total) {
+      st.textContent = 'Arquivo ' + idx + '/' + tot + ' — página ' + p + ' de ' + total + '…';
+      await sleep(0);
+    }
+  }
+  return added;
+}
 async function scanFile() {
   const inp = $('#pdfFile');
   const st = $('#scanStatus');
-  if (!inp.files || !inp.files.length) { st.textContent = 'Selecione um arquivo PDF ou TXT.'; return; }
-  const file = inp.files[0];
+  if (!inp.files || !inp.files.length) { st.textContent = 'Selecione um ou mais arquivos PDF/TXT.'; return; }
   compileAll(readTermsFromUI());
-  const label = ($('#mgLabel').value || file.name).trim();
-  const dateBR = brFromISO($('#mgDate').value);
-  let added = 0;
-  try {
-    if (/\.txt$/i.test(file.name) || file.type === 'text/plain') {
-      st.textContent = 'Lendo texto…';
-      const text = await file.text();
-      added += absorbLocal(text, null, label, dateBR);
-    } else {
-      st.textContent = 'Carregando leitor de PDF…';
-      await loadPdfjs();
-      const buf = await file.arrayBuffer();
-      const doc = await window.pdfjsLib.getDocument({ data: buf }).promise;
-      const total = doc.numPages;
-      for (let p = 1; p <= total; p++) {
-        const page = await doc.getPage(p);
-        const tc = await page.getTextContent();
-        const text = tc.items.map((i) => i.str).join(' ');
-        added += absorbLocal(text, p, label, dateBR);
-        if (p % 5 === 0 || p === total) st.textContent = 'Analisando página ' + p + ' de ' + total + '…';
-      }
+  const arquivos = Array.from(inp.files);
+  const btn = $('#btnScanFile');
+  btn.disabled = true;
+  let added = 0; let falhas = 0;
+  const t0 = Date.now();
+  for (let i = 0; i < arquivos.length; i++) {
+    st.textContent = 'Arquivo ' + (i + 1) + '/' + arquivos.length + ' — ' + arquivos[i].name;
+    try {
+      added += await analisarUm(arquivos[i], st, i + 1, arquivos.length);
+    } catch (e) {
+      falhas++;
+      logLine('Análise local · ' + esc(arquivos[i].name) + ' — falha: ' + esc(e.message), 'err');
     }
-    st.textContent = added
-      ? ('Concluído: ' + added + ' página(s)/bloco(s) com menção direta ou gatilho de impacto — incluídos em §2.')
-      : 'Concluído: nada relevante segundo os termos e regras atuais.';
-    if (added) render();
-  } catch (e) {
-    st.textContent = 'Falha na análise: ' + e.message + '. Se o PDF for digitalizado (imagem), o texto não é extraível localmente.';
   }
+  const seg = Math.max(1, Math.round((Date.now() - t0) / 1000));
+  btn.disabled = false;
+  st.textContent = arquivos.length + ' arquivo(s) em ' + seg + 's · '
+    + (added ? added + ' bloco(s) relevante(s) incluído(s) em §2.' : 'nada relevante segundo os termos e regras atuais.')
+    + (falhas ? ' ' + falhas + ' arquivo(s) com falha (PDF digitalizado não tem texto extraível).' : '');
+  if (added) render();
+}
+function linksEdicoesMG() {
+  const alvo = $('#mgDatas');
+  let from = $('#dtFrom').value;
+  let to = $('#dtTo').value;
+  if (!from || !to) { alvo.innerHTML = '<span class="hint">Defina o período em §1.</span>'; return; }
+  const d0 = new Date(from + 'T12:00:00');
+  const d1 = new Date(to + 'T12:00:00');
+  const linhas = [];
+  for (let d = new Date(d0); d <= d1 && linhas.length < 40; d.setDate(d.getDate() + 1)) {
+    const dow = d.getDay();
+    if (dow === 0) continue;
+    const iso = fmtISO(d);
+    linhas.push('<a href="https://www.jornalminasgerais.mg.gov.br/?dataJornal=' + iso
+      + '" target="_blank" rel="noopener">→ Edição de ' + brFromISO(iso) + '</a>');
+  }
+  alvo.innerHTML = linhas.length ? linhas.join('') : '<span class="hint">Sem dias úteis no período.</span>';
 }
 function scanPasted() {
   const st = $('#scanStatus');
@@ -1395,6 +1496,22 @@ function init() {
   initBoletim();
   $('#btnBoletim').addEventListener('click', gerarBoletim);
   $('#btnScanFile').addEventListener('click', scanFile);
+  $('#btnMgDatas').addEventListener('click', linksEdicoesMG);
+  const dz = $('#dzMg');
+  if (dz) {
+    ['dragenter', 'dragover'].forEach((ev) => dz.addEventListener(ev, (e) => {
+      e.preventDefault(); dz.style.borderColor = '#175A45';
+    }));
+    ['dragleave', 'drop'].forEach((ev) => dz.addEventListener(ev, (e) => {
+      e.preventDefault(); dz.style.borderColor = '';
+    }));
+    dz.addEventListener('drop', (e) => {
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
+        $('#pdfFile').files = e.dataTransfer.files;
+        scanFile();
+      }
+    });
+  }
   $('#btnScanText').addEventListener('click', scanPasted);
 }
 
