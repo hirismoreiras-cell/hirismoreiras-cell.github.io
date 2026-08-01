@@ -285,7 +285,8 @@ footer .selof{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-t
 <section id="secMg">
   <div class="secHead"><span class="num">§3</span><h2>Minas Gerais — complemento</h2></div>
   <div class="card">
-    <p class="hint">A varredura de §1 já traz automaticamente a <b>legislação estadual</b> pela API de dados abertos da ALMG. O que ela não cobre são os atos administrativos da saúde — <b>Resoluções SES/MG</b>, <b>Deliberações CIB-SUS/MG</b> e o caderno do Diário Oficial «Minas Gerais». Esses portais declaram, em seus próprios arquivos de robôs, que não autorizam acesso automatizado; por isso a ferramenta não os varre sozinha. O caminho abaixo mantém a agilidade sem passar por cima dessa regra.</p>
+    <p class="hint">A varredura de §1 já traz sozinha a <b>legislação estadual</b> (ALMG). O <b>Diário Oficial «Minas Gerais»</b> entra por lançamento manual, em três passos: <b>1)</b> gere os links das edições do período; <b>2)</b> baixe os PDFs; <b>3)</b> selecione ou arraste todos de uma vez para a área de análise. Os achados entram nas mesmas categorias e no boletim de §6.</p>
+    <p class="hint" style="margin-top:6px">As <b>Resoluções SES/MG</b> e <b>Deliberações CIB</b> ficam nos atalhos abaixo, para conferência direta no portal da Secretaria.</p>
     <div class="mgLinks" id="mgLinks"></div>
     <div class="mgLinks" style="margin-top:6px">
       <a href="https://portal-antigo.saude.mg.gov.br/resolucoes" target="_blank" rel="noopener">→ Resoluções SES/MG (portal da Secretaria)</a>
@@ -312,7 +313,7 @@ footer .selof{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-t
       </div>
       <div id="scanStatus" class="hint" style="margin-top:8px"></div>
     </div>
-    <p class="hint" style="margin-top:10px"><b>Rotina sugerida (2 minutos por semana):</b> gere os links acima, baixe as edições do período, arraste todas de uma vez para esta área. Os achados entram nas mesmas categorias e no mesmo boletim de §6.</p>
+    <div id="mgFeitas" class="hint" style="margin-top:10px"></div>
   </div>
 </section>
 
@@ -449,17 +450,14 @@ footer .selof{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-t
 <section id="secEquipe">
   <div class="secHead"><span class="num">§7</span><h2>Equipe</h2></div>
   <div class="card">
-    <p class="hint"><b>Como liberar seu Gemini pago para a colaboradora.</b> Não é preciso — e não convém — repassar a sua chave pessoal. No mesmo projeto pago, gere uma <b>segunda chave</b>: as duas consomem o mesmo plano, mas você revoga a dela sem afetar a sua, e sabe qual chave gerou cada consumo.</p>
-    <p class="hint" style="margin-top:8px">1. Abra <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> com a sua conta.<br>
-    2. Toque em <b>Create API key</b> e escolha <b>o mesmo projeto</b> da sua chave atual — é isso que mantém o plano pago.<br>
-    3. Nomeie de forma identificável (ex.: «Sentinela — colaboradora»).<br>
-    4. Envie a chave por canal privado; ela cola em §5 e marca «Conta paga».</p>
-    <p class="hint" style="margin-top:8px">Para conferir consumo ou revogar depois: as chaves aparecem na mesma tela do AI Studio e no painel do Google Cloud, em APIs e Serviços → Credenciais.</p>
+    <p class="hint"><b>Repassar o sistema pronto.</b> Gere o código no quadro abaixo com a chave incluída e envie à colaboradora junto com o endereço do site. Ela cola o código, toca em «Aplicar configuração» e fica com tudo funcionando — termos, confirmadores de CNPJ/CNES, dados do boletim e o Gemini ativo.</p>
+    <p class="hint" style="margin-top:8px">Envie por canal privado (mensagem direta, e-mail interno). O código carrega a chave, então não deve ser publicado nem anexado a documento que circule fora da equipe.</p>
+    <p class="hint" style="margin-top:8px">Se um dia quiser separar os consumos, dá para gerar uma segunda chave no mesmo projeto pago em <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> — mesmo plano, revogável de forma independente. As chaves ficam também no Google Cloud, em APIs e Serviços → Credenciais.</p>
   </div>
 
   <div class="card" style="margin-top:12px">
     <p class="hint"><b>Transferir a configuração.</b> Em vez de a colaboradora refazer os termos, confirmadores e dados do boletim à mão, gere um código aqui e peça que ela cole no aparelho dela.</p>
-    <label class="opt" style="margin-top:10px"><input type="checkbox" id="cfgComChave"><span>Incluir a chave de API no código<small>Só marque se for enviar por canal privado. O código passa a valer como senha.</small></span></label>
+    <label class="opt" style="margin-top:10px"><input type="checkbox" id="cfgComChave" checked><span>Incluir a chave de API no código<small>Envia o sistema inteiro pronto para uso. Mantenha o código em canal privado — ele vale como senha e não deve ser publicado.</small></span></label>
     <div class="btnrow">
       <button class="btn sec" id="btnCfgGerar">Gerar código</button>
       <button class="btn mini" id="btnCfgCopiar">Copiar</button>
@@ -664,7 +662,7 @@ function mkTermo(t) {
 /* ---------- compilação de termos e regras ---------- */
 let T_A = [], T_B = [], T_T = [], T_X = [], T_CONF = [], T_HOM = [], RULES = [], HILITE = [];
 const RX_IDENT = /(31[.\s]?025[.\s]?354)|(\b0?0?26840\b)/i;
-let state = { items: [], running: false, ranPeriod: null, iaUsada: false };
+let state = { items: [], running: false, ranPeriod: null, iaUsada: false, mgFeitas: [] };
 
 function readTermsFromUI() {
   const grab = (id) => $(id).value.split('\n').map((x) => x.trim()).filter(Boolean);
@@ -1396,11 +1394,23 @@ async function scanFile() {
     }
   }
   const seg = Math.max(1, Math.round((Date.now() - t0) / 1000));
+  arquivos.forEach((f) => {
+    const marca = (dataDoNome(f.name) || brFromISO($('#mgDate').value) || f.name);
+    if (state.mgFeitas.indexOf(marca) < 0) state.mgFeitas.push(marca);
+  });
+  pintarMgFeitas();
   btn.disabled = false;
   st.textContent = arquivos.length + ' arquivo(s) em ' + seg + 's · '
     + (added ? added + ' bloco(s) relevante(s) incluído(s) em §2.' : 'nada relevante segundo os termos e regras atuais.')
     + (falhas ? ' ' + falhas + ' arquivo(s) com falha (PDF digitalizado não tem texto extraível).' : '');
   if (added) render();
+}
+function pintarMgFeitas() {
+  const el = $('#mgFeitas');
+  if (!el) return;
+  el.innerHTML = state.mgFeitas.length
+    ? '<b>Edições já lançadas nesta sessão:</b> ' + state.mgFeitas.map(esc).join(' · ')
+    : '';
 }
 function linksEdicoesMG() {
   const alvo = $('#mgDatas');
@@ -1503,7 +1513,8 @@ function init() {
   $('#btnTxt').addEventListener('click', downloadTxt);
   $('#btnCsv').addEventListener('click', downloadCsv);
   $('#btnClear').addEventListener('click', () => {
-    state.items = []; state.ranPeriod = null;
+    state.items = []; state.ranPeriod = null; state.mgFeitas = [];
+    pintarMgFeitas();
     $('#secRes').style.display = 'none';
     $('#progress').classList.remove('on');
     $('#progress').innerHTML = '';
