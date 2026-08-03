@@ -307,7 +307,7 @@ footer .selof{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-t
       </div>
       <label class="fld" for="mgUrl" style="margin-top:12px">Tentar pelo endereço do PDF (sem baixar)</label>
       <input type="text" id="mgUrl" placeholder="https://…  cole aqui o link do PDF da edição">
-      <div class="btnrow"><button class="btn mini" id="btnMgUrl">Ler do endereço</button></div>
+      <div class="btnrow"><button class="btn mini" id="btnMgUrl">Ler do endereço</button><button class="btn mini" id="btnMgDiag">Testar acesso</button></div>
       <p class="hint" style="margin-top:4px">Tentativa direta pelo seu navegador, sem intermediário. Funciona apenas se o portal permitir; se recusar, use a área de arquivos acima.</p>
       <label class="fld" for="pasteText" style="margin-top:12px">…ou cole aqui um trecho / texto da edição</label>
       <textarea id="pasteText" placeholder="Cole o texto copiado do diário para triagem pelos mesmos termos."></textarea>
@@ -1409,6 +1409,59 @@ async function scanFile() {
     + (falhas ? ' ' + falhas + ' arquivo(s) com falha (PDF digitalizado não tem texto extraível).' : '');
   if (added) render();
 }
+async function diagnosticarUrl() {
+  const st = $('#scanStatus');
+  const url = $('#mgUrl').value.trim();
+  if (!url) { st.textContent = 'Cole primeiro o endereço do PDF da edição.'; return; }
+  const box = $('#progress');
+  box.classList.add('on');
+  logLine('Teste de acesso ao Diário estadual — ' + esc(url.slice(0, 90)));
+
+  // 1) leitura normal (com CORS)
+  let l1 = logLine('1) Leitura direta pelo navegador…');
+  let corsOk = false; let erro1 = '';
+  try {
+    const r = await fetch(url, { mode: 'cors' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const b = await r.arrayBuffer();
+    corsOk = b.byteLength > 1000;
+    l1.className = 'plog ok';
+    l1.textContent = '1) Leitura direta — OK (' + Math.round(b.byteLength / 1024) + ' KB recebidos)';
+  } catch (e) {
+    erro1 = e.message || String(e);
+    l1.className = 'plog err';
+    l1.textContent = '1) Leitura direta — recusada (' + erro1 + ')';
+  }
+
+  // 2) o servidor está no ar? (resposta opaca, sem ler conteúdo)
+  let alcancavel = false;
+  if (!corsOk) {
+    const l2 = logLine('2) Servidor está respondendo?…');
+    try {
+      await fetch(url, { mode: 'no-cors' });
+      alcancavel = true;
+      l2.className = 'plog ok';
+      l2.textContent = '2) Servidor responde normalmente';
+    } catch (e) {
+      l2.className = 'plog err';
+      l2.textContent = '2) Servidor não respondeu (' + (e.message || e) + ')';
+    }
+  }
+
+  let veredito;
+  if (corsOk) {
+    veredito = 'VEREDITO: o portal permite a leitura automática. Use «Ler do endereço» — não é preciso baixar nem subir arquivo.';
+    logLine(veredito, 'ok');
+  } else if (alcancavel) {
+    veredito = 'VEREDITO: o servidor está no ar, mas não autoriza que outra página leia o arquivo (falta o cabeçalho de permissão). '
+      + 'Não há como contornar isso pelo navegador — o caminho é baixar o PDF e usar a área de arquivos, ou solicitar acesso oficial à PRODEMGE.';
+    logLine(veredito, 'err');
+  } else {
+    veredito = 'VEREDITO: o endereço não respondeu. Confira se o link é o do arquivo PDF (e não o da página) e se há conexão.';
+    logLine(veredito, 'err');
+  }
+  st.textContent = veredito;
+}
 async function carregarPorUrl() {
   const st = $('#scanStatus');
   const url = $('#mgUrl').value.trim();
@@ -1444,8 +1497,11 @@ async function carregarPorUrl() {
       : 'Edição lida: nada relevante segundo os termos atuais.';
     if (added) render();
   } catch (e) {
-    st.textContent = 'Não foi possível ler direto do endereço (' + e.message
-      + '). O portal não autoriza leitura por outro programa — baixe o PDF e use a área de arquivos acima.';
+    const msg = e.message || String(e);
+    const provavelCors = /failed to fetch|load failed|networkerror|cors/i.test(msg);
+    st.textContent = provavelCors
+      ? 'O portal não autoriza que outra página leia o arquivo. Use «Testar acesso» para o diagnóstico completo, ou baixe o PDF e use a área de arquivos acima.'
+      : ('Não foi possível ler o endereço (' + msg + '). Confira se o link aponta para o PDF.');
   }
   btn.disabled = false;
 }
@@ -1581,6 +1637,7 @@ function init() {
   $('#btnScanFile').addEventListener('click', scanFile);
   $('#btnMgDatas').addEventListener('click', linksEdicoesMG);
   $('#btnMgUrl').addEventListener('click', carregarPorUrl);
+  $('#btnMgDiag').addEventListener('click', diagnosticarUrl);
   const dz = $('#dzMg');
   if (dz) {
     ['dragenter', 'dragover'].forEach((ev) => dz.addEventListener(ev, (e) => {
