@@ -305,7 +305,11 @@ footer .selof{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-t
         <div><label class="fld" for="mgDate">Data (se o nome não indicar)</label><input type="date" id="mgDate"></div>
         <div><label class="fld" for="mgLabel">Identificação</label><input type="text" id="mgLabel" value="Minas Gerais — Caderno 1"></div>
       </div>
-      <label class="fld" for="pasteText" style="margin-top:10px">…ou cole aqui um trecho / texto da edição</label>
+      <label class="fld" for="mgUrl" style="margin-top:12px">Tentar pelo endereço do PDF (sem baixar)</label>
+      <input type="text" id="mgUrl" placeholder="https://…  cole aqui o link do PDF da edição">
+      <div class="btnrow"><button class="btn mini" id="btnMgUrl">Ler do endereço</button></div>
+      <p class="hint" style="margin-top:4px">Tentativa direta pelo seu navegador, sem intermediário. Funciona apenas se o portal permitir; se recusar, use a área de arquivos acima.</p>
+      <label class="fld" for="pasteText" style="margin-top:12px">…ou cole aqui um trecho / texto da edição</label>
       <textarea id="pasteText" placeholder="Cole o texto copiado do diário para triagem pelos mesmos termos."></textarea>
       <div class="btnrow">
         <button class="btn sec" id="btnScanFile">Analisar arquivos</button>
@@ -1405,6 +1409,46 @@ async function scanFile() {
     + (falhas ? ' ' + falhas + ' arquivo(s) com falha (PDF digitalizado não tem texto extraível).' : '');
   if (added) render();
 }
+async function carregarPorUrl() {
+  const st = $('#scanStatus');
+  const url = $('#mgUrl').value.trim();
+  if (!url) { st.textContent = 'Cole o endereço do PDF da edição.'; return; }
+  if (!/^https?:\/\//i.test(url)) { st.textContent = 'O endereço deve começar com https://'; return; }
+  compileAll(readTermsFromUI());
+  const btn = $('#btnMgUrl');
+  btn.disabled = true;
+  st.textContent = 'Tentando abrir a edição diretamente…';
+  try {
+    // tentativa direta pelo próprio navegador, sem intermediário
+    const r = await fetch(url);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const buf = await r.arrayBuffer();
+    if (buf.byteLength < 1000) throw new Error('arquivo vazio ou inacessível');
+    await loadPdfjs();
+    const doc = await window.pdfjsLib.getDocument({ data: buf }).promise;
+    const total = doc.numPages;
+    const dataArq = dataDoNome(url) || brFromISO($('#mgDate').value);
+    const label = ($('#mgLabel').value || 'Minas Gerais').trim() + (dataArq ? ' — ' + dataArq : '');
+    let added = 0;
+    for (let p = 1; p <= total; p++) {
+      const page = await doc.getPage(p);
+      const tc = await page.getTextContent();
+      added += absorbLocal(tc.items.map((i) => i.str).join(' '), p, label, dataArq);
+      if (p % 10 === 0 || p === total) { st.textContent = 'Página ' + p + ' de ' + total + '…'; await sleep(0); }
+    }
+    const marca = dataArq || url.slice(-24);
+    if (state.mgFeitas.indexOf(marca) < 0) state.mgFeitas.push(marca);
+    pintarMgFeitas();
+    st.textContent = added
+      ? ('Edição lida direto do endereço: ' + added + ' bloco(s) relevante(s) em §2.')
+      : 'Edição lida: nada relevante segundo os termos atuais.';
+    if (added) render();
+  } catch (e) {
+    st.textContent = 'Não foi possível ler direto do endereço (' + e.message
+      + '). O portal não autoriza leitura por outro programa — baixe o PDF e use a área de arquivos acima.';
+  }
+  btn.disabled = false;
+}
 function pintarMgFeitas() {
   const el = $('#mgFeitas');
   if (!el) return;
@@ -1536,6 +1580,7 @@ function init() {
   $('#btnBoletim').addEventListener('click', gerarBoletim);
   $('#btnScanFile').addEventListener('click', scanFile);
   $('#btnMgDatas').addEventListener('click', linksEdicoesMG);
+  $('#btnMgUrl').addEventListener('click', carregarPorUrl);
   const dz = $('#dzMg');
   if (dz) {
     ['dragenter', 'dragover'].forEach((ev) => dz.addEventListener(ev, (e) => {
